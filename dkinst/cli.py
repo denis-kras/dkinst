@@ -9,14 +9,15 @@ import subprocess
 from rich.console import Console
 from rich.table import Table
 
-from installers._base import BaseInstaller
-from installers import _base
-import installers
+from . import __version__
+from .installers._base import BaseInstaller
+from .installers import _base
+from . import installers
 
 console = Console()
 
 
-VERSION: str = "0.1.0"
+VERSION: str = __version__
 
 
 def _get_installers() -> list[BaseInstaller]:

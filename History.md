@@ -1,5 +1,7 @@
 <!-- HISTORY -->
 ## History
 
+* 0.1.4 - 29.08.2025
+  * Fixed import issue + minor fixes.
 * 0.1.0 - 28.08.2025
   * Initial release: tesseract_ocr installer script for Windows.
