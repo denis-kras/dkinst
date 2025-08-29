@@ -16,6 +16,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["dkinst*"]
 
+[tool.setuptools.package-data]
+dkinst = ["config.toml"]
+
 # Getting verision from '__init__.py' of the 'dkinst' package.
 [tool.setuptools.dynamic]
 version = {attr = "dkinst.__version__"}
