@@ -1,0 +1,65 @@
+# Build systems for 'wheel' and 'setuptools' of version 61.0.0 and higher. Only in version 61 was introsuced full support for parsing 'pyproject.toml'.
+[build-system]
+requires = [
+    "setuptools >= 61.0.0",
+#    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+#[tool.setuptools]
+## If you have several folders, you have to specify which one is the package.
+#packages = ["dkinst"]
+
+#[tool.setuptools.packages]
+#find = {}
+
+[tool.setuptools.packages.find]
+include = ["dkinst*"]
+
+# Getting verision from '__init__.py' of the 'dkinst' package.
+[tool.setuptools.dynamic]
+version = {attr = "dkinst.__version__"}
+
+# While building, installing package add all non-python files from folder inside package: 'addons'. Workls recursively.
+# Usage:
+# import importlib.resources
+# package_name = 'dkinst.addons.folder_name'
+# resource = 'file_name.py'
+# destination = 'path/to/your/destination/folder/test.py'
+# The 'resource_path' is a Path object.
+# resource_path = importlib.resources.files(package_name) / resource
+#[tool.setuptools.package-data]
+#"dkinst.addons" = ["**"]
+
+[project.entry-points."console_scripts"]
+dkinst = "dkinst.cli:main"
+
+[project]
+# Name of the package.
+name = "dkinst"
+# This is needed in order to get the 'version' variable from '[tool.setuptools.dynamic]' section.
+dynamic = ["version"]
+# Authors. 'email' section can be added for each author.
+authors = [
+  { name="Denis Kras" }
+]
+# Short description.
+description = "Den K Simple Installer"
+license = {file = "LICENSE.txt"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "wheel",
+    "rich==14.1.0",
+#    "pywin32; platform_system == 'Windows'",
+]
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/denis-kras/dkinst"

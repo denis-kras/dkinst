@@ -1,0 +1,63 @@
+from pathlib import Path
+from types import ModuleType
+from typing import Literal
+
+from . import _base
+from . helpers import tesseract_ocr_manager
+
+
+class TesseractOCR(_base.BaseInstaller):
+    def __init__(self):
+        super().__init__()
+        self.name: str = Path(__file__).stem
+        self.description: str = "Tesseract OCR Installer"
+        self.version: str = tesseract_ocr_manager.VERSION
+        self.platforms: list = ["windows"]
+        self.helper: ModuleType = tesseract_ocr_manager
+
+        self.dir_path: str = str(Path(self.base_path) / self.name)
+        self.exe_path: str = str(Path(self.dir_path) / "tesseract.exe")
+
+    def install(
+            self,
+            force: bool = False
+    ):
+        tesseract_ocr_manager.main(
+            compile_portable=True,
+            set_path=True,
+            exe_path=self.exe_path,
+            force=force
+        )
+
+    def update(
+            self,
+            force: bool = False
+    ):
+        self.install(force=force)
+
+    def _show_help(
+            self,
+            method: Literal["install", "uninstall", "update"]
+    ) -> None:
+        if method == "install":
+            method_help: str = (
+                "This method uses the [tesseract_ocr_manager.py] with the following arguments:\n"
+                "  --compile-portable               - compile the latest tesseract executable.\n"
+                "  --set-path                       - set system PATH variable to provided executable.\n"
+                f'  --exe-path "{self.exe_path}"                      - Specify the target executable\n'
+                "\n"
+                "  --force                          - force reinstallation/recompilation of the latest version even if executable is already present.\n"
+                "  This one is used only if you provide it explicitly to the 'install' command. Example:\n"
+                "    dkinst install tesseract_ocr force\n"
+                "\n"
+                "You can also use the 'manual' method to provide custom arguments to the helper script.\n"
+                "Example:\n"
+                "  dkinst manual tesseract_ocr help\n"
+                "  dkinst manual tesseract_ocr --compile-portable --set-path\n"
+                "\n"
+            )
+            print(method_help)
+        elif method == "update":
+            print("In this installer 'update()' is the same as 'install()'.")
+        else:
+            raise ValueError(f"Unknown method '{method}'.")
