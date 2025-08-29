@@ -1,0 +1,6 @@
+dkinst.egg-info/
+build/
+.idea/
+__pycache__/
+
+Z_Git Upload.cmd
