@@ -41,8 +41,12 @@ Ubuntu 24 already comes with python 3.12, just use pip to install the library:
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-To follow. For now, check the files in the library. I tried my best with understandable naming and grouping convention.
-There are some ready to use scripts in the 'addons/mains' folder. You can use them as a reference.
+Execute in CMD:
+```cmd
+dkinst
+dkinst help
+```
+For full help and examples about installation commands.
 
 
 
