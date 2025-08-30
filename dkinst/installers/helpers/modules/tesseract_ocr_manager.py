@@ -399,13 +399,4 @@ def main(
 if __name__ == '__main__':
     parser = _make_parser()
     args = parser.parse_args()
-    sys.exit(main(
-        installer_usage=args.installer_usage,
-        compile_portable=args.compile_portable,
-        installer_version_string_fetch=args.installer_version_string_fetch,
-        compile_version_string_fetch=args.compile_version_string_fetch,
-        get_path=args.get_path,
-        set_path=args.set_path,
-        force=args.force,
-        exe_path=args.exe_path
-    ))
+    sys.exit(main(**vars(args)))

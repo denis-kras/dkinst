@@ -4,10 +4,8 @@ from typing import Literal
 import subprocess
 from rich.console import Console
 
-from atomicshop.wrappers.nodejsw import install_nodejs_windows
-
-from . import _base
-from .helpers import permissions
+from . import _base, tesseract_ocr, nodejs
+from .helpers.infra import permissions
 
 
 console = Console()
@@ -31,15 +29,12 @@ class Robocorp(_base.BaseInstaller):
             return 1
 
         console.print(f"Installing Tesseract OCR", style="blue")
-        subprocess.check_call(["dkinst", "install", "tesseract_ocr"])
+        tesseract_ocr_wrapper = tesseract_ocr.TesseractOCR()
+        tesseract_ocr_wrapper.install()
 
         console.print("Installing NodeJS.", style="blue")
-        if not install_nodejs_windows.is_nodejs_installed():
-            install_nodejs_windows.install_nodejs_windows()
-        install_nodejs_windows.add_nodejs_to_path()
-        if not install_nodejs_windows.is_nodejs_installed():
-            console.print("Node.js installation failed.", style="red")
-            return 1
+        nodejs_wrapper = nodejs.NodeJS()
+        nodejs_wrapper.install(force=True)
 
         console.print("PIP Installing Robocorp.", style="blue")
         subprocess.check_call(["pip", "install", "--upgrade", "rpaframework"])
@@ -50,11 +45,12 @@ class Robocorp(_base.BaseInstaller):
         console.print("PIP Installing Robocorp-Recognition.", style="blue")
         subprocess.check_call(["pip", "install", "--upgrade", "rpaframework-recognition"])
 
-        console.print("Installing Playwright browsers.", style="blue")
-        subprocess.check_call(["playwright", "install"])
-
         console.print("Initializing Robocorp Browser.", style="blue")
         subprocess.check_call(["rfbrowser", "init"])
+
+        # Robocorp browser init already installs the browsers.
+        # console.print("Installing Playwright browsers.", style="blue")
+        # subprocess.check_call(["playwright", "install"])
 
         console.print("Installing Additional modules.", style="blue")
         subprocess.check_call(["pip", "install", "--upgrade", "matplotlib", "imagehash", "pynput"])
@@ -74,6 +70,8 @@ class Robocorp(_base.BaseInstaller):
         )
         with open(window_file_path, "w") as file:
             file.write(file_content)
+
+        console.print("Robocorp Framework installation/update finished.", style="green")
 
         return 0
 

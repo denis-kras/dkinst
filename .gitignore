@@ -2,5 +2,6 @@ dkinst.egg-info/
 build/
 .idea/
 __pycache__/
+debug_dkinst.py
 
 Z_Git Upload.cmd

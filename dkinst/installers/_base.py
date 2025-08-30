@@ -4,8 +4,6 @@ import tomllib
 from pathlib import Path
 from types import ModuleType
 from typing import Literal
-import os
-import ctypes
 
 
 INSTALLATION_PATH_PORTABLE_WINDOWS: str = "C:\\dkinst"      # Installation path for portable files on Windows that don't have a default location.

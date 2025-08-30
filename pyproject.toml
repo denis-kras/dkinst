@@ -55,6 +55,7 @@ requires-python = ">=3.12"
 dependencies = [
     "wheel",
     "rich==14.1.0",
+    "atomicshop",
 #    "pywin32; platform_system == 'Windows'",
 ]
 
