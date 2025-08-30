@@ -3,7 +3,7 @@ from types import ModuleType
 from typing import Literal
 
 from . import _base
-from . helpers import tesseract_ocr_manager
+from . helpers.modules import tesseract_ocr_manager
 
 
 class TesseractOCR(_base.BaseInstaller):
