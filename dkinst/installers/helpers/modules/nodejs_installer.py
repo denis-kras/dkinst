@@ -347,6 +347,7 @@ def install_nodejs_ubuntu(
 
     # Check if Node.js is installed.
     is_nodejs_installed_ubuntu()
+# === EOF UBUNTU FUNCTIONS =============================================================================================
 
 
 def _make_parser():
@@ -373,7 +374,6 @@ def _make_parser():
     )
 
     return parser
-# === EOF UBUNTU FUNCTIONS =============================================================================================
 
 
 def main(
