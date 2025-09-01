@@ -11,6 +11,16 @@ So, I will not search for a setup script/line or write one.
 It is written in Python, currently supports 3.12. Hope to support newer versions in the near future.
 
 
+<!-- AVAILABLE INSTALLERS -->
+## Available Installers
+
+You can check the 'installers' folder for the available installers.
+Or execute in CMD:
+```cmd
+dkinst available
+```
+
+
 <!-- GETTING STARTED -->
 ## Getting Started
 
