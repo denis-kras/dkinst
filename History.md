@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.4.1 - 01.09.2025
+  * Admin rights check for Windows on PyCharm installer.
 * 0.4.0 - 01.09.2025
   * Added PyCharm (Windows + Debian) installer.
 * 0.3.0 - 30.08.2025
