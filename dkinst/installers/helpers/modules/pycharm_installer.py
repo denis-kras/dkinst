@@ -9,34 +9,24 @@ from rich.console import Console
 
 from atomicshop import process, web
 
-from ..infra import system
+from ..infra import system, permissions
 
 
 console = Console()
 
 
-VERSION: str = "1.0.0"
+VERSION: str = "1.0.1"
 
 
 # === WINDOWS FUNCTIONS ================================================================================================
 def install_win():
     """
     Main function to download and install the latest PyCharm Community Edition.
-
-    Usage:
-    python -m atomicshop.mains.installs.pycharm
-
-    Or run the main function directly.
-        from atomicshop.wrappers import pycharmw
-
-
-        def main():
-            pycharmw.download_install_main()
-
-
-        if __name__ == "__main__":
-            main()
     """
+
+    if not permissions.is_admin():
+        console.print("This script requires administrative privileges to run.", style="red")
+        return 1
 
     def get_latest_pycharm_download_link():
         url = "https://www.jetbrains.com/pycharm/download/"
@@ -88,6 +78,8 @@ def install_win():
 
     # Remove the installer
     os.remove(installer_path)
+
+    return 0
 # === EOF WINDOWS FUNCTIONS ============================================================================================
 
 
@@ -134,14 +126,12 @@ def main(
 
     current_platform: str = system.get_platform()
     if current_platform == "debian":
-        install_ubuntu(enable_sudo_execution)
+        return install_ubuntu(enable_sudo_execution)
     elif current_platform == "windows":
-        install_win()
+        return install_win()
     else:
         console.print(f"PyCharm installation on {current_platform} is not implemented yet.", style="red")
         return 1
-
-    return 0
 
 
 if __name__ == '__main__':
