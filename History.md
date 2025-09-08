@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.6.2 - 09.09.2025
+  * Fixed msi import globally on non-Windows.
 * 0.6.1 - 08.09.2025
   * Fixed Node.js installation on Ubuntu.
 * 0.6.0 - 08.09.2025

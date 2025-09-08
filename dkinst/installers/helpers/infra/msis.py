@@ -1,10 +1,12 @@
 import subprocess
+import platform
 
 from rich.console import Console
 
-from . import permissions
-from atomicshop import get_process_list
-from atomicshop.wrappers.psutilw import processes
+if platform.system().lower() == 'windows':
+    from . import permissions
+    from atomicshop import get_process_list
+    from atomicshop.wrappers.psutilw import processes
 
 
 console = Console()
