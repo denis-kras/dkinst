@@ -7,14 +7,14 @@ from rich.console import Console
 
 from atomicshop.wrappers import githubw
 
-from ..infra import system
+from ..infra import permissions, msis, system
 
 
 console = Console()
 
 
-VERSION: str = "1.0.1"
-"""Fixed Ubuntu installation"""
+VERSION: str = "1.0.0"
+"""Initial"""
 
 
 # === WINDOWS FUNCTIONS ================================================================================================
@@ -170,9 +170,6 @@ def install_nodejs_win(
     :param force: bool, if True, the function will install Node.js even if it is already installed.
     :return: int, 0 if successful, 1 if failed.
     """
-
-    from ..infra import permissions, msis
-
 
     if not permissions.is_admin():
         console.print("This script requires administrative privileges to install Node.js.", style="red")
