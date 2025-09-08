@@ -9,19 +9,6 @@ from typing import Literal
 INSTALLATION_PATH_PORTABLE_WINDOWS: str = "C:\\dkinst"      # Installation path for portable files on Windows that don't have a default location.
 
 KNOWN_SUPPORTED_PLATFORMS: list[str] = ["windows", "debian"]
-PLATFORM_CONVERTION: dict[str, str] = {    # Convert sys.platform to installer platform names.
-    "linux": "linux",
-    "linux2": "linux",
-    "darwin": "macos",
-    "win32": "windows",
-    "cygwin": "windows",
-    "msys": "windows",
-    "freebsd": "freebsd",
-    "openbsd": "freebsd",
-    "netbsd": "freebsd",
-    "aix": "aix",
-    "sunos5": "solaris",
-}
 
 KNOWN_METHODS: list[str] | None = None
 CUSTOM_METHODS: list[str] = ["manual"]

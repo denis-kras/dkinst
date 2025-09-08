@@ -13,6 +13,7 @@ from . import __version__
 from .installers._base import BaseInstaller
 from .installers import _base
 from . import installers
+from .installers.helpers.infra import system
 
 console = Console()
 
@@ -179,14 +180,9 @@ def main() -> int:
             inst._platforms_known()
 
             # Now check if the current platform is supported by this installer.
-            current_platform = sys.platform
-            if current_platform in _base.PLATFORM_CONVERTION:
-                installers_kommon_platform = _base.PLATFORM_CONVERTION[current_platform]
-                if installers_kommon_platform not in inst.platforms:
-                    console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].", style='red', markup=False)
-                    return 1
-            else:
-                console.print(f"This platform is unknown: [{current_platform}]", style='red', markup=False)
+            current_platform = system.get_platform()
+            if current_platform not in inst.platforms:
+                console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].", style='red', markup=False)
                 return 1
 
             # Processing the 'manual' method.
