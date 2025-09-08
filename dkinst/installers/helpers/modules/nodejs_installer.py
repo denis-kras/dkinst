@@ -13,7 +13,8 @@ from ..infra import system
 console = Console()
 
 
-VERSION: str = "1.0.0"
+VERSION: str = "1.0.1"
+"""Fixed Ubuntu installation"""
 
 
 # === WINDOWS FUNCTIONS ================================================================================================
@@ -22,8 +23,6 @@ import time
 import tempfile
 
 from atomicshop import web
-
-from ..infra import permissions, msis
 
 
 WINDOWS_X64_SUFFIX: str = "x64.msi"
@@ -171,6 +170,10 @@ def install_nodejs_win(
     :param force: bool, if True, the function will install Node.js even if it is already installed.
     :return: int, 0 if successful, 1 if failed.
     """
+
+    from ..infra import permissions, msis
+
+
     if not permissions.is_admin():
         console.print("This script requires administrative privileges to install Node.js.", style="red")
         return 1
