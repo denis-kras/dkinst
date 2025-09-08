@@ -13,7 +13,7 @@ class PyCharm(_base.BaseInstaller):
         self.description: str = "PyCharm Installer"
         self.version: str = pycharm_installer.VERSION
         self.platforms: list = ["windows", "debian"]
-        self.helper: ModuleType | None = None
+        self.helper: ModuleType | None = pycharm_installer
 
     def install(
             self,

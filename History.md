@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.6.3 - 09.09.2025
+  * Fixed platform recognition.
+  * Added Pycharm manual method.
 * 0.6.2 - 09.09.2025
   * Fixed msi import globally on non-Windows.
 * 0.6.1 - 08.09.2025

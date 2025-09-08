@@ -15,7 +15,8 @@ from ..infra import system, permissions
 console = Console()
 
 
-VERSION: str = "1.0.1"
+VERSION: str = "1.0.2"
+"""String cleaning"""
 
 
 # === WINDOWS FUNCTIONS ================================================================================================
@@ -104,7 +105,7 @@ def _make_parser():
 
     :return: Parsed arguments.
     """
-    parser = argparse.ArgumentParser(description='Install PyCharm Community Edition.')
+    parser = argparse.ArgumentParser(description='Install PyCharm Unified Edition.')
     parser.add_argument(
         '--enable_sudo_execution', action='store_true',
         help='There is a problem when trying to run snapd installed Pycharm as sudo, need to enable this.'
@@ -117,7 +118,7 @@ def main(
         enable_sudo_execution: bool = False
 ) -> int:
     """
-    The function will install Node.js on Ubuntu or Windows.
+    The function will install PyCharm on Ubuntu or Windows.
 
     :param enable_sudo_execution: bool: Enable sudo execution for snapd installed PyCharm.
 
