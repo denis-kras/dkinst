@@ -134,7 +134,7 @@ def is_installed() -> Union[str, None]:
 def install_mongodb_win(
         latest: bool = False,
         rc: bool = False,
-        major: int = None,
+        major: str = None,
         compass: bool = False,
         force: bool = False
 ) -> int:
@@ -143,7 +143,7 @@ def install_mongodb_win(
 
     :param latest: bool, if True, the latest non-RC version will be downloaded.
     :param rc: bool, if True, the latest RC version will be downloaded.
-    :param major: int, if set, the latest version of the specified major version will be downloaded.
+    :param major: str, if set, the latest version of the specified major version will be downloaded.
     :param compass: bool, if True, MongoDB Compass will be installed.
     :param force: bool, if True, MongoDB will be installed even if it is already installed.
     :return: int, 0 if successful, 1 if failed.
@@ -277,7 +277,7 @@ def _http_ok(url: str, timeout: int = 6) -> bool:
 
 def _detect_latest_major_for_ubuntu(
         distro_codename: str,
-        major: int = None
+        major: str = None
 ) -> str | None:
     """
     Find the newest MongoDB major that has:
@@ -300,12 +300,12 @@ def _detect_latest_major_for_ubuntu(
     if _http_ok(release_url) and _http_ok(key_url):
         return version
     else:
-        None
+        return None
 
 
 def add_repo_and_install(
         latest: bool = True,
-        major: int = None
+        major: str = None
 ) -> int:
     """Install the specified major version of MongoDB on Ubuntu."""
 
@@ -325,7 +325,7 @@ def add_repo_and_install(
             console.print(f"Error detecting latest MongoDB version: {e}", style="red")
             return 1
     elif major:
-        version: str = str(major)
+        version: str = major
     else:
         raise ValueError("Invalid value for 'latest' and 'major'.")
 
@@ -368,14 +368,14 @@ def add_repo_and_install(
 
 def install_mongodb_ubuntu(
         latest: bool = False,
-        major: int = None,
+        major: str = None,
         compass: bool = False
 ) -> int:
     """
     Download and install the latest version of MongoDB Community Server on Ubuntu.
 
     :param latest: bool, if True, the latest non-RC version will be downloaded.
-    :param major: int, Install the latest minor version of MongoDB Community Server on Ubuntu by providing the major version.
+    :param major: str, Install the latest minor version of MongoDB Community Server on Ubuntu by providing the major version.
     :param compass: bool, if True, MongoDB Compass will be installed.
     :return:
     """
@@ -422,7 +422,7 @@ def _make_parser():
     )
     parser.add_argument(
         '-m', '--major',
-        type=int,
+        type=str,
         help='Install the latest version of the specified major version.'
     )
 
@@ -443,7 +443,7 @@ def _make_parser():
 def main(
         latest: bool = True,
         rc: bool = False,
-        major: int = None,
+        major: str = None,
         compass: bool = False,
         force: bool = False
 ) -> int:
@@ -452,7 +452,7 @@ def main(
 
     :param latest: bool, if True, the latest non-RC version will be downloaded.
     :param rc: bool, if True, the latest RC version will be downloaded.
-    :param major: int, if set, the latest version of the specified major version will be downloaded.
+    :param major: str, if set, the latest version of the specified major version will be downloaded.
     :param compass: bool, if True, MongoDB Compass will be installed.
     :param force: bool, if True, MongoDB will be installed even if it is already installed.
     :return: int, 0 if successful, 1 if failed.

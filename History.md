@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.7.1 - 09.09.2025
+  * Minor fixes in MongoDB installer.
 * 0.7.0 - 09.09.2025
   * Added MongoDB installer (Windows + Debian).
   * Minor cleaning in Node.js installer.
