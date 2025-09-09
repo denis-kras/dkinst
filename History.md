@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.7.0 - 09.09.2025
+  * Added MongoDB installer (Windows + Debian).
+  * Minor cleaning in Node.js installer.
 * 0.6.3 - 09.09.2025
   * Fixed platform recognition.
   * Added Pycharm manual method.

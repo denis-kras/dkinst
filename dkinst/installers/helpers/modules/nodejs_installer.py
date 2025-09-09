@@ -394,9 +394,9 @@ def main(
     """
 
     if latest + lts + (version is not None) > 1:
-        raise ValueError("Only one of the arguments can be set to True or provided: latest, lts, version.")
+        console.print("Only one of the arguments can be set to True or provided: latest, lts, version.", style="red")
     if not latest and not lts and version is None:
-        raise ValueError("At least one of the arguments must be set to True or provided: latest, lts, version.")
+        console.print("At least one of the arguments must be set to True or provided: latest, lts, version.", style="red")
 
     current_platform: str = system.get_platform()
     if current_platform == "debian":
