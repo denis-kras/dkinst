@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.7.2 - 10.09.2025
+  * File grabbing fixed with CA certs.
 * 0.7.1 - 09.09.2025
   * Minor fixes in MongoDB installer.
 * 0.7.0 - 09.09.2025
