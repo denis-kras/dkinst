@@ -62,7 +62,8 @@ def install_win():
         print("Starting the download...")
         file_name = "pycharm-latest.exe"
         # download_file(download_url, file_name)
-        installer_path = web.download(file_url=download_url, file_name=file_name, use_certifi_ca_repository=True)
+        # installer_path = web.download(file_url=download_url, file_name=file_name, use_certifi_ca_repository=True)
+        installer_path = web.download(file_url=download_url, file_name=file_name)
         console.print(f"Downloaded the latest version of PyCharm to: {file_name}", style='green')
     except Exception as e:
         print(f"An error occurred: {e}")
