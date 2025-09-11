@@ -226,18 +226,18 @@ def _make_parser():
     import argparse
     parser = argparse.ArgumentParser(description="Install Tesseract OCR on Windows.")
     parser.add_argument(
-        "-i", "--installer_usage", action="store_true",
+        "-i", "--installer-usage", action="store_true",
         help="Use the latest Tesseract installer from GitHub Releases.")
     parser.add_argument(
-        "-c", "--compile_portable", action="store_true",
+        "-c", "--compile-portable", action="store_true",
         help="Compile the latest Tesseract version from source in GitHub Releases. "
              "This could take a while, an hour or more, depending on your system."
              "This installs Visual Studio Build Tools and all the tesseract dependencies.")
     parser.add_argument(
-        "-iv", "--installer_version_string_fetch", action="store_true",
+        "-iv", "--installer-version-string-fetch", action="store_true",
         help="Fetch the latest Tesseract installer version string from GitHub Releases.")
     parser.add_argument(
-        "-cv", "--compile_version_string_fetch", action="store_true",
+        "-cv", "--compile-version-string-fetch", action="store_true",
         help="Fetch the latest Tesseract compiled version string from GitHub Releases.")
     parser.add_argument(
         "--get-path", action="store_true",
@@ -267,7 +267,7 @@ def main(
 ) -> int:
 
     if (installer_version_string_fetch + compile_version_string_fetch + get_path) > 1:
-        print("You cannot more than 1 argument of [--installer_version_string_fetch], [--compile_version_string_fetch], [--get-path] arguments at the same time.")
+        print("You cannot more than 1 argument of [--installer-version-string-fetch], [--compile-version-string-fetch], [--get-path] arguments at the same time.")
         return 1
 
     if installer_version_string_fetch or compile_version_string_fetch or get_path:
@@ -397,6 +397,6 @@ def main(
 
 
 if __name__ == '__main__':
-    parser = _make_parser()
-    args = parser.parse_args()
+    exec_parser = _make_parser()
+    args = exec_parser.parse_args()
     sys.exit(main(**vars(args)))

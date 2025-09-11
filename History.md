@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.8.0 - 11.09.2025
+  * Added WSL installer (Windows).
 * 0.7.2 - 10.09.2025
   * File grabbing fixed with CA certs.
 * 0.7.1 - 09.09.2025
