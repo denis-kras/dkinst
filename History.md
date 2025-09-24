@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.8.1 - 24.09.2025
+  * Added debug.py.
 * 0.8.0 - 11.09.2025
   * Added WSL installer (Windows).
 * 0.7.2 - 10.09.2025
