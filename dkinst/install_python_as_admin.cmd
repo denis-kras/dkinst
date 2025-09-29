@@ -1,4 +1,5 @@
-REM Version 1.0.0
+REM Version 1.0.1
+REM Fixed relative installer path
 @echo off
 setlocal
 
@@ -93,11 +94,12 @@ if "%INSTALLER_URL%"=="" (
 )
 
 echo Downloading the installer from %INSTALLER_URL%...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile python_installer.exe"
+echo To: "%~dp0python_installer.exe"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile '%~dp0python_installer.exe'"
 
 rem Install Python with specified switches
 echo Installing Python %LATEST_VERSION%...
-python_installer.exe /passive InstallAllUsers=1 PrependPath=1 TargetDir="%TARGET_DIR%" AssociateFiles=1 InstallLauncherAllUsers=1
+"%~dp0python_installer.exe" /passive InstallAllUsers=1 PrependPath=1 TargetDir="%TARGET_DIR%" AssociateFiles=1 InstallLauncherAllUsers=1
 
 rem Clean up
 del python_installer.exe
