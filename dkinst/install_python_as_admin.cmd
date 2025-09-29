@@ -1,5 +1,5 @@
-REM Version 1.0.1
-REM Fixed relative installer path
+REM Version 1.0.2
+REM Fixed relative installer path2
 @echo off
 setlocal
 
@@ -9,6 +9,8 @@ if "%~1"=="" (
     echo Example: %0 3.12
     exit /b 1
 )
+
+set "PYINSTALLER=%~dp0python_installer.exe"
 
 rem ===== Parse requested version =====
 set "PYTHON_VERSION=%~1"
@@ -94,15 +96,15 @@ if "%INSTALLER_URL%"=="" (
 )
 
 echo Downloading the installer from %INSTALLER_URL%...
-echo To: "%~dp0python_installer.exe"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile '%~dp0python_installer.exe'"
+echo To: "%PYINSTALLER%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile '%PYINSTALLER%'"
 
 rem Install Python with specified switches
 echo Installing Python %LATEST_VERSION%...
-"%~dp0python_installer.exe" /passive InstallAllUsers=1 PrependPath=1 TargetDir="%TARGET_DIR%" AssociateFiles=1 InstallLauncherAllUsers=1
+"%PYINSTALLER%" /passive InstallAllUsers=1 PrependPath=1 TargetDir="%TARGET_DIR%" AssociateFiles=1 InstallLauncherAllUsers=1
 
 rem Clean up
-del python_installer.exe
+del "%PYINSTALLER%"
 
 echo Python %LATEST_VERSION% installation completed.
 endlocal
