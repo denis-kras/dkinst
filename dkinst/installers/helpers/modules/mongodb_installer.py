@@ -360,7 +360,9 @@ def add_repo_and_install(
 
     # Step 5: Start MongoDB service and enable it on startup
     print("Step 5: Starting MongoDB service and enabling it on startup...")
-    ubuntu_terminal.start_enable_service_check_availability("mongod")
+    result_code: int = ubuntu_terminal.start_enable_service_check_availability("mongod")
+    if result_code != 0:
+        return result_code
 
     console.print(f"MongoDB {version} installation complete!", style='green')
     return 0

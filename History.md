@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.9.0 - 30.09.2025
+  * Added Elasticsearch and Kibana installers (Debian).
 * 0.8.2 - 29.09.2025
   * Fixed fibratus installer.
 * 0.8.1 - 24.09.2025
