@@ -43,6 +43,11 @@ def get_latest_mongodb_download_url(
     if not urls_in_page:
         raise MongoDBNoDownloadLinksError("Could not find the download link for MongoDB Community Server.")
 
+    if platform == 'ubuntu':
+        ubuntu_version: str = system.get_ubuntu_version().replace('.', '')
+    else:
+        ubuntu_version: str = ''
+
     found_urls: list = []
     for url in urls_in_page:
         if platform == 'windows':
@@ -51,9 +56,6 @@ def get_latest_mongodb_download_url(
                     continue
                 found_urls.append(url)
         elif platform == 'ubuntu':
-            # ubuntu_version = system.get_ubuntu_version().replace('.', '')
-            ubuntu_version = '2404'
-
             if 'ubuntu' in url and 'x86_64' in url and ubuntu_version in url and url.endswith('.tgz'):
                 if '-rc' in url:
                     continue
@@ -148,10 +150,6 @@ def install_mongodb_win(
     :param force: bool, if True, MongoDB will be installed even if it is already installed.
     :return: int, 0 if successful, 1 if failed.
     """
-
-    if not permissions.is_admin():
-        console.print("This function requires administrator privileges.", style='red')
-        return 1
 
     if rc and latest:
         console.print("Both 'rc' and 'latest' cannot be True at the same time.", style='red')
@@ -295,7 +293,10 @@ def _detect_latest_major_for_ubuntu(
         f"https://repo.mongodb.org/apt/ubuntu/dists/"
         f"{distro_codename}/mongodb-org/{version}/Release"
     )
-    key_url: str = f"https://pgp.mongodb.com/server-{version}.asc"
+
+    # For key url, even if the minor is 2, like 8.2, the key is still for 8.0
+    major_only: str = version.split('.')[0]
+    key_url: str = f"https://pgp.mongodb.com/server-{major_only}.0.asc"
 
     if _http_ok(release_url) and _http_ok(key_url):
         return version
@@ -334,17 +335,20 @@ def add_repo_and_install(
     ubuntu_terminal.update_system_packages()
     ubuntu_terminal.install_packages(["wget", "curl", "gnupg"])
 
+    # We need the major version only for the key file. Since the key file will still need 8.0 even if the release is 8.2.
+    major: str = version.split('.')[0]
+
     # Step 1: Import the MongoDB public GPG key
     print("Step 1: Importing the MongoDB public GPG key...")
-    run_result: int = run_command(f"curl -fsSL https://pgp.mongodb.com/server-{version}.asc | "
-                f"sudo gpg --dearmor --yes -o /usr/share/keyrings/mongodb-server-{version}.gpg")
+    run_result: int = run_command(f"curl -fsSL https://pgp.mongodb.com/server-{major}.0.asc | "
+                f"sudo gpg --dearmor --yes -o /usr/share/keyrings/mongodb-server-{major}.0.gpg")
     if run_result != 0:
         return run_result
 
     # Step 2: Create the MongoDB list file for APT
     print("Step 2: Creating MongoDB APT list file...")
     run_result: int = run_command(
-        f"echo 'deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-{version}.gpg ] "
+        f"echo 'deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-{major}.0.gpg ] "
         f"https://repo.mongodb.org/apt/ubuntu {distro_version}/mongodb-org/{version} multiverse' | "
         f"sudo tee /etc/apt/sources.list.d/mongodb-org-{version}.list")
     if run_result != 0:
@@ -468,15 +472,29 @@ def main(
         return 1
 
     current_platform: str = system.get_platform()
+
+    # Needs for both Windows and Ubuntu to check for admin rights.
+    if not permissions.is_admin():
+        console.print("This action requires administrator privileges.", style='red')
+        if current_platform == "debian":
+            venv = os.environ.get('VIRTUAL_ENV', None)
+            if venv:
+                print(f'Try: sudo "{venv}/bin/dkinst" install mongodb')
+        return 1
+
     if current_platform == "debian":
         if force:
             console.print("On Debian, [force] argument currently is not applicable.", style="yellow", markup=False)
         if rc:
             console.print("On Debian, only [major], [compass] and [latest] arguments is implemented; [rc] argument isn't available.", style="red", markup=False)
             return 1
-        install_mongodb_ubuntu(latest, major, compass)
+        result_code: int = install_mongodb_ubuntu(latest, major, compass)
+        if result_code != 0:
+            return result_code
     elif current_platform == "windows":
-        install_mongodb_win(latest, rc, major, compass, force)
+        result_code: int = install_mongodb_win(latest, rc, major, compass, force)
+        if result_code != 0:
+            return result_code
     else:
         console.print(f"MongoDB installation on {current_platform} is not implemented yet.", style="red")
         return 1
