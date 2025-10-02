@@ -386,9 +386,10 @@ def install_mongodb_ubuntu(
     :return:
     """
 
-    run_result: int = add_repo_and_install(latest, major)
-    if run_result != 0:
-        return run_result
+    if latest or major:
+        run_result: int = add_repo_and_install(latest, major)
+        if run_result != 0:
+            return run_result
 
     if not compass:
         return 0

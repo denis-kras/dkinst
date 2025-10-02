@@ -108,7 +108,7 @@ def _make_parser():
     """
     parser = argparse.ArgumentParser(description='Install PyCharm Unified Edition.')
     parser.add_argument(
-        '--enable_sudo_execution', action='store_true',
+        '--enable-sudo-execution', action='store_true',
         help='There is a problem when trying to run snapd installed Pycharm as sudo, need to enable this.'
              'This is not a good security practice to run GUI apps as root. Only if you know what you doing.')
 

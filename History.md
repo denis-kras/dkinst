@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.10.1 - 02.10.2025
+  * Fixed MongoDB installer (Debian).
+  * Fixed PyCharm installer (Debian).
 * 0.10.0 - 02.10.2025
   * Added BashDB installer (Debian).
   * Added Krusader installer (Debian).
