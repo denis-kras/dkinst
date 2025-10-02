@@ -20,6 +20,8 @@ class MongoDB(_base.BaseInstaller):
         self.platforms: list = ["windows", "debian"]
         self.helper: ModuleType | None = mongodb_installer
 
+        self.admins: list[str] = ["debian"]
+
     def install(
             self,
             force: bool = False

@@ -1,6 +1,12 @@
 <!-- HISTORY -->
 ## History
 
+* 0.10.0 - 02.10.2025
+  * Added BashDB installer (Debian).
+  * Added Krusader installer (Debian).
+  * Added HomeBrew installer (Debian).
+  * Added Admin check under cli.
+  * Added dependencies automatic installer under dkinst.
 * 0.9.1 - 30.09.2025
   * Fixed MongoDB installer (Debian).
 * 0.9.0 - 30.09.2025

@@ -476,10 +476,6 @@ def main(
     # Needs for both Windows and Ubuntu to check for admin rights.
     if not permissions.is_admin():
         console.print("This action requires administrator privileges.", style='red')
-        if current_platform == "debian":
-            venv = os.environ.get('VIRTUAL_ENV', None)
-            if venv:
-                print(f'Try: sudo "{venv}/bin/dkinst" install mongodb')
         return 1
 
     if current_platform == "debian":

@@ -29,6 +29,12 @@ class BaseInstaller:
         # Providing the helper module will automatically introduce the 'manual()' method on the 'cli.py' level.
         self.helper: ModuleType | None = None
 
+        # If the installer has any prerequisites, they will be installed first. The prerequisites should be the names of other installers in dkinst.
+        self.dependencies: list[str] = []
+
+        # The list of platforms that require admin rights to install this application. Off course, it should be a subset of self.platforms.
+        self.admins: list[str] = []
+
         self.base_path: str = INSTALLATION_PATH_PORTABLE_WINDOWS
         self.dir_path: str | None = None  # Path to the installation directory of the installed application, if applicable. Example: Path(self.base_path) / self.name
         self.exe_path: str | None = None  # Path to the main executable of the installed application, if applicable. Example: Path(self.dir_path) / "app.exe"

@@ -5,6 +5,7 @@ from importlib import import_module
 import argparse
 from pathlib import Path
 import subprocess
+import os
 
 from rich.console import Console
 from rich.table import Table
@@ -13,7 +14,7 @@ from . import __version__
 from .installers._base import BaseInstaller
 from .installers import _base
 from . import installers
-from .installers.helpers.infra import system
+from .installers.helpers.infra import system, permissions
 
 console = Console()
 
@@ -62,6 +63,94 @@ def cmd_available() -> None:
         )
 
     console.print(table)
+
+
+def _run_dependencies(
+    installer: BaseInstaller,
+    installers_map: dict[str, BaseInstaller],
+    done: set[str] | None = None,
+    stack: list[str] | None = None,
+) -> int:
+    """
+    Recursively install `installer.dependencies` (list of installer names or
+    installer objects) before installing `installer` itself.
+    Returns 0 on success; non-zero aborts the whole command.
+    """
+    done = done or set()
+    stack = stack or []
+
+    deps = getattr(installer, "dependencies", []) or []
+    for dep in deps:
+        # Accept either a name ("brew") or an installer instance/class with .name
+        dep_name = dep if isinstance(dep, str) else getattr(dep, "name", str(dep))
+
+        if dep_name in done:
+            continue
+        if dep_name in stack:
+            console.print(
+                f"Detected circular dependency: {' -> '.join(stack + [dep_name])}",
+                style="red", markup=False
+            )
+            return 1
+
+        dep_inst = installers_map.get(dep_name)
+        if dep_inst is None:
+            console.print(
+                f"Dependency [{dep_name}] referenced by [{installer.name}] was not found.",
+                style="red", markup=False
+            )
+            return 1
+
+        # Platform check for the dependency
+        dep_inst._platforms_known()
+        current_platform = system.get_platform()
+        if current_platform not in dep_inst.platforms:
+            console.print(
+                f"Dependency [{dep_name}] does not support your platform [{current_platform}].",
+                style="red", markup=False
+            )
+            return 1
+
+        # Admin check for the dependency if required on this platform
+        rc = _require_admin_if_needed(dep_inst)
+        if rc != 0:
+            return rc
+
+        # Recurse first so deep deps install in correct order
+        rc = _run_dependencies(dep_inst, installers_map, done, stack + [dep_name])
+        if rc != 0:
+            return rc
+
+        console.print(
+            f"Installing dependency [{dep_name}] for [{installer.name}]…",
+            style="green", markup=False
+        )
+        rc = dep_inst.install()
+        if rc not in (0, None):
+            return rc
+        done.add(dep_name)
+
+    return 0
+
+
+def _require_admin_if_needed(installer: BaseInstaller) -> int:
+    """
+    If the installer declares an `admins` list (subset of its `platforms`)
+    and the current platform is in that list, enforce admin privileges.
+    Returns 0 if ok; non-zero to abort.
+    """
+    admins = getattr(installer, "admins", None) or []
+    if not admins:
+        return 0
+    current_platform = system.get_platform()
+    if current_platform in admins and not permissions.is_admin():
+        console.print("This action requires administrator privileges.", style='red')
+        if current_platform == "debian":
+            venv = os.environ.get('VIRTUAL_ENV', None)
+            if venv:
+                print(f'Try: sudo "{venv}/bin/dkinst" install mongodb')
+        return 1
+    return 0
 
 
 def _make_parser() -> argparse.ArgumentParser:
@@ -172,7 +261,12 @@ def main() -> int:
         installer_name = namespace.script
         extras = namespace.installer_args or []
 
-        for inst in _get_installers():
+        # Build a single map of installer instances so dependency resolution
+        # uses the same instances.
+        installers_list = _get_installers()
+        installers_map = {i.name: i for i in installers_list}
+
+        for inst in installers_list:
             # Find the provided installer.
             if inst.name != installer_name:
                 continue
@@ -184,6 +278,12 @@ def main() -> int:
             if current_platform not in inst.platforms:
                 console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].", style='red', markup=False)
                 return 1
+
+            # If this is an install, enforce admin privileges when requested
+            if method in ["install", "manual"]:
+                rc = _require_admin_if_needed(inst)
+                if rc != 0:
+                    return rc
 
             # Processing the 'manual' method.
             if method == 'manual':
@@ -223,6 +323,16 @@ def main() -> int:
             if len(extras) == 1 and extras[0] == "help":
                 inst._show_help(method)
                 return 0
+
+            # If this is an 'install', resolve & install dependencies first
+            if method == "install":
+                rc = _run_dependencies(inst, installers_map)
+                if rc != 0:
+                    return rc
+
+                console.print(
+                    f"All dependencies for [{inst.name}] are installed. Proceeding to main installer…",
+                    style = "cyan", markup = False)
 
             # Normal execution: call method and pass through extras (if any)
             target = getattr(inst, method)
