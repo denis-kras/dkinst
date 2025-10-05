@@ -1,6 +1,11 @@
 <!-- HISTORY -->
 ## History
 
+* 0.11.0 - 05.10.2025
+  * Added Virtual Keyboard enabler for GNOME (Debian).
+  * Added VLC installer (Debian).
+  * Added VMWare Tools Desktop installer (Debian).
+  * Added xRDP installer (Debian).
 * 0.10.1 - 02.10.2025
   * Fixed MongoDB installer (Debian).
   * Fixed PyCharm installer (Debian).
