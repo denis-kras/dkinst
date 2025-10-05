@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 import subprocess
 import os
+import shutil
 
 from rich.console import Console
 from rich.table import Table
@@ -133,6 +134,17 @@ def _run_dependencies(
     return 0
 
 
+def ensure_root_or_reexec() -> None:
+    """If not root, re-exec this command under sudo, preserving args."""
+    if os.geteuid() == 0:
+        return  # already root
+    exe = shutil.which("dkinst") or sys.argv[0]
+    # make it absolute in case it was found via PATH
+    exe = os.path.abspath(exe)
+    # Replace the current process with: sudo <same dkinst> <same args>
+    os.execvp("sudo", ["sudo", "-E", exe] + sys.argv[1:])
+
+
 def _require_admin_if_needed(installer: BaseInstaller) -> int:
     """
     If the installer declares an `admins` list (subset of its `platforms`)
@@ -144,8 +156,13 @@ def _require_admin_if_needed(installer: BaseInstaller) -> int:
         return 0
     current_platform = system.get_platform()
     if current_platform in admins and not permissions.is_admin():
+
         console.print("This action requires administrator privileges.", style='red')
         if current_platform == "debian":
+            # Auto-elevate; this never returns on success
+            ensure_root_or_reexec()
+
+            # If we get here, sudo failed
             venv = os.environ.get('VIRTUAL_ENV', None)
             if venv:
                 print(f'Try: sudo "{venv}/bin/dkinst" install mongodb')

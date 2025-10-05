@@ -58,7 +58,7 @@ def install_brew():
         """
 
 sudo apt update
-sudo apt install curl git -y
+sudo apt install curl git build-essential -y
 
 # Install Homebrew (if you don't have it)
 NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -88,7 +88,6 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 
 # Install dependencies
-sudo apt install build-essential -y
 brew install gcc
 """]
 

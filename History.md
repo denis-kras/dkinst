@@ -1,6 +1,11 @@
 <!-- HISTORY -->
 ## History
 
+* 0.11.1 - 05.10.2025
+  * cli - Fixed self sudo restart on Debian.
+  * Added installation script for global Debian.
+  * Fixed HomeBrew installer (Debian).
+  * Fixed xRDP installer (Debian).
 * 0.11.0 - 05.10.2025
   * Added Virtual Keyboard enabler for GNOME (Debian).
   * Added VLC installer (Debian).

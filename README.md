@@ -29,7 +29,7 @@ To get a local copy up and running follow these simple steps.
 ### Installation Windows
 
 1. Install Python 3.12.10 or use the silent installer that will download and install it for you.<br>
-    1.1. Download the file: install_python_as_admin.cmd<br>
+    1.1. Download the file: /prereqs/install_python_as_admin_win.cmd<br>
     1.2. Run CMD as admin.<br>
     1.3. In CMD run the script with '3.12.10' argument:
     ```cmd
@@ -43,10 +43,16 @@ To get a local copy up and running follow these simple steps.
    
 ### Installation Linux
    
-Ubuntu 24 already comes with python 3.12, just use pip to install the library:
-   ```sh
-   pip install dkinst
-   ```
+Ubuntu 24 already comes with python 3.12. This file will install dkinst globally using pipx.<br>
+1. Download the file: /prereqs/install_dkinst_pipx_debian.sh<br>
+2. Make the file executable:<br>
+    ```sh
+    chmod +x install_dkinst_pipx_debian.sh
+    ```
+3. Run the script:
+    ```sh
+    ./install_dkinst_pipx_debian.sh
+    ```
 
 <!-- USAGE EXAMPLES -->
 ## Usage

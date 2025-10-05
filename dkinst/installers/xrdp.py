@@ -11,7 +11,7 @@ from .helpers.infra import system
 console = Console()
 
 
-class VLC(_base.BaseInstaller):
+class XRDP(_base.BaseInstaller):
     def __init__(self):
         super().__init__()
         self.name: str = Path(__file__).stem
@@ -43,24 +43,24 @@ def install_function():
         """
 
 echo "[*] Updating package lists..."
-sudo apt update
+sudo -E apt update
 
 echo "[*] Installing xrdp and Xorg backend..."
 # xorgxrdp is the display backend used by xrdp for Ubuntu/GNOME
-sudo apt install -y xrdp
+sudo -E apt install -y xrdp
 
 echo "[*] Ensuring xrdp can use system TLS certs..."
 # Normally set by package install, but harmless if repeated
-adduser xrdp ssl-cert >/dev/null 2>&1 || true
+sudo usermod -aG ssl-cert xrdp || true
 
 echo "[*] Enabling and starting xrdp service..."
-sudo systemctl start xrdp
+# sudo systemctl start xrdp
 sudo systemctl enable --now xrdp
 
 echo "[*] Opening firewall (TCP 3389) if UFW is active..."
 if command -v ufw >/dev/null 2>&1; then
-  if ufw status | grep -q "Status: active"; then
-    ufw allow 3389/tcp
+  if sudo ufw status | grep -q "Status: active"; then
+    sudo ufw allow 3389/tcp
   else
     echo "UFW is installed but not active; no rule added."
   fi
@@ -69,11 +69,19 @@ else
 fi
 
 echo "[*] Verifying service status..."
-systemctl --no-pager --full status xrdp | sed -n '1,8p' || true
+sudo systemctl --no-pager --full status xrdp | sed -n '1,8p' || true
 
-echo install XFCE4 desktop environment
-sudo apt install xfce4 xfce4-goodies -y
-echo xfce4-session > ~/.xsession
+echo "[*] Installing XFCE (non-interactive, minimal)..."
+sudo -E apt-get install -yq --no-install-recommends xfce4 xfce4-goodies
+
+echo "[*] Configuring xrdp to start XFCE..."
+# Write for the user running this script
+echo xfce4-session > "$HOME/.xsession"
+# If script is run via sudo later, also write for the original user
+# if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+#   sudo -u "$SUDO_USER" bash -lc 'echo xfce4-session > "$HOME/.xsession"'
+# fi
+
 sudo systemctl restart xrdp
 sudo systemctl daemon-reload
 
@@ -83,7 +91,7 @@ echo "RDP is enabled."
 echo "   • Service  : xrdp (port 3389/TCP)"
 echo "   • Address  : ${IPV4:-<your-server-ip>}"
 echo
-echo "You will need to log out of your current session and use a desktop environment compatible with xrdp.
+echo "You will need to log out of your current session and use a desktop environment compatible with xrdp."
 """]
 
     system.execute_bash_script_string(script_lines)
