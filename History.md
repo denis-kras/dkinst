@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.12.0 - 08.10.2025
+  * Fixed Virtual Keyboard installer (Debian).
+  * Added auto-completion for dkinst installer names and methods. 
 * 0.11.1 - 05.10.2025
   * cli - Fixed self sudo restart on Debian.
   * Added installation script for global Debian.

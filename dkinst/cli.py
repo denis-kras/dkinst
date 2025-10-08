@@ -10,17 +10,27 @@ import shutil
 
 from rich.console import Console
 from rich.table import Table
+import argcomplete
 
 from . import __version__
 from .installers._base import BaseInstaller
 from .installers import _base
 from . import installers
-from .installers.helpers.infra import system, permissions
+from .installers.helpers.infra import system, permissions, prereqs
 
 console = Console()
 
 
 VERSION: str = __version__
+
+
+def _installer_name_completer(prefix, parsed_args, **kwargs):
+    """
+    Return installer names that start with what's already typed.
+    Enables: `dkinst install v<Tab>` -> `virtual_keyboard`.
+    """
+    names = [i.name for i in _get_installers()]
+    return [n for n in names if n.startswith(prefix)]
 
 
 def _get_installers() -> list[BaseInstaller]:
@@ -179,14 +189,20 @@ def _make_parser() -> argparse.ArgumentParser:
         "  install <installer>          Install the script with the given name.\n"
         "  update  <installer>          Update the script with the given name.\n"
         "  uninstall <installer>        Uninstall the script with the given name.\n"
+        "\n"
         "  manual <installer>           If manual method is available for specific installer, "
         "                               you can use it to execute the helper script with its parameters.\n"
-        "\n"
         "  manual <installer> <args>    Execute the helper script with its parameters.\n"
         "  manual <installer> help      Show help for manual arguments of the helper script.\n"
+        "\n"
         "  available                    List all available installers.\n"
         "  edit-config                  Open the configuration file in the default editor.\n"
         "                               You can change the base installation path here.\n"
+        "  prereqs                      Install prerequisites for dkinst. Run this after installing or updating dkinst.\n"
+        "                               This includes argcomplete for tab-completion. Example: \n"
+        "                               While typing `dkinst install v<Tab>` it will auto-complete to `virtual_keyboard`.\n"
+        "                               While typing `dkinst in<Tab>` it will auto-complete to `install`.\n"
+        "                               Currently uses argcomplete's global activation method: register-python-argcomplete\n"
         "  help                         Show this help message.\n"
         "\n"
         "You can use help for any sub-command to see its specific usage.\n"
@@ -212,17 +228,26 @@ def _make_parser() -> argparse.ArgumentParser:
     for subcmd in _base.ALL_METHODS:
         # Make <script> optional so `dkinst install help` works
         sc = sub.add_parser(subcmd, add_help=False)
-        sc.add_argument(
+        # sc.add_argument(
+        script_arg = sc.add_argument(
             "script",
             nargs="?",  # optional to allow `install help`
             help="installer script name or 'help'",
         )
+
+        # Attach dynamic completion for the installer name
+        script_arg.completer = _installer_name_completer
+
         # Everything after <script> is handed untouched to the installer
         sc.add_argument("installer_args", nargs=argparse.REMAINDER)
 
     sub.add_parser("available")
     sub.add_parser("edit-config")
+    sub.add_parser("prereqs")
     sub.add_parser("help")
+
+    argcomplete.autocomplete(parser)
+
     return parser
 
 
@@ -260,6 +285,9 @@ def main() -> int:
         config_path: str = str(Path(__file__).parent / "config.toml")
         subprocess.run(["notepad", config_path])
         return 0
+
+    if namespace.sub == "prereqs":
+        return prereqs._cmd_prereqs()
 
     # Methods from the Known Methods list
     if namespace.sub in _base.ALL_METHODS:
