@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import os
 import shutil
+from typing import Literal
 
 from rich.console import Console
 from rich.table import Table
@@ -263,7 +264,7 @@ def main() -> int:
     dkinst update  <script>    [extra args passed through]
     dkinst uninstall <script>  [extra args passed through]
     """
-    parser = _make_parser()          # builds the ArgumentParser shown earlier
+    parser: argparse.ArgumentParser = _make_parser()          # builds the ArgumentParser shown earlier
 
     # If no arguments, show the top-level help and exit successfully
     passed_arguments = sys.argv[1:]
@@ -291,25 +292,21 @@ def main() -> int:
 
     # Methods from the Known Methods list
     if namespace.sub in _base.ALL_METHODS:
-        method = namespace.sub
+        method: Literal["install", "uninstall", "update"] = namespace.sub
 
         # No script provided OR explicitly asked for help
         if namespace.script is None or namespace.script == "help":
-            # `manual help` should show the fixed, centralized manual help
-            if method == "manual":
-                BaseInstaller._show_manual_help()
-                return 0
             BaseInstaller._show_help(method)
             return 0
 
         # From here on, a specific installer was provided
-        installer_name = namespace.script
-        extras = namespace.installer_args or []
+        installer_name: str = namespace.script
+        extras: list = namespace.installer_args or []
 
         # Build a single map of installer instances so dependency resolution
         # uses the same instances.
-        installers_list = _get_installers()
-        installers_map = {i.name: i for i in installers_list}
+        installers_list: list = _get_installers()
+        installers_map: dict = {i.name: i for i in installers_list}
 
         for inst in installers_list:
             # Find the provided installer.
@@ -324,8 +321,8 @@ def main() -> int:
                 console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].", style='red', markup=False)
                 return 1
 
-            # If this is an install, enforce admin privileges when requested
-            if method in ["install", "manual"]:
+            # If this is an install, enforce admin privileges when requested.
+            if method in ["install", "manual"] and "help" not in extras:
                 rc = _require_admin_if_needed(inst)
                 if rc != 0:
                     return rc
@@ -343,6 +340,10 @@ def main() -> int:
                     console.print(f"No manual argparser available for [{inst.name}].", style='red', markup=False)
                     return 1
 
+                # Change the command line program name to include the installer name.
+                helper_parser.prog = f"{helper_parser.prog} {method} {inst.name}"
+
+                # Output help of specific installer helper parser
                 if (
                         # Installer-specific help: [dkinst <method> <installer> help]
                         len(extras) == 1 and extras[0] == "help"
@@ -352,6 +353,7 @@ def main() -> int:
                         len(extras) == 0
                 ):
                     helper_parser.print_help()
+                    return 0
 
                 # Regular arguments execution of the manual method.
                 # Parse just the extras, not the whole argv

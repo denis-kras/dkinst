@@ -430,7 +430,7 @@ def _make_parser():
     parser.add_argument(
         '-m', '--major',
         type=str,
-        help='Install the latest version of the specified major version.'
+        help='Install the latest specified major version.'
     )
 
     parser.add_argument(

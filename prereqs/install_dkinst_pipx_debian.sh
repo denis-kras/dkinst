@@ -9,10 +9,10 @@ source ~/.bashrc
 echo "Installing dkinst via pipx..."
 pipx install dkinst
 
-source ~/.bashrc
+export PATH="$HOME/.local/bin:$PATH"
 dkinst prereqs
 
 echo "dkinst installation complete. You can now run 'dkinst' from the command line."
 echo "To update dkinst in the future, run: pipx upgrade dkinst"
 echo "To uninstall dkinst, run: pipx uninstall dkinst"
-echo "To run dkinst in current session, restart your terminal or run: source ~/.bashrc"
+echo "To run dkinst restart your terminal. To run in the current session, run: source ~/.bashrc"

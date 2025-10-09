@@ -40,6 +40,20 @@ To get a local copy up and running follow these simple steps.
    ```cmd
    pip install dkinst
    ```
+   <br>
+3. Adding auto-completion in PowerShell shell (optional):
+   ```cmd
+   dkinst prereqs
+   ```
+   This will not work in CMD shell.
+   The auto-completion lets you use TAB key to complete installer names and methods.
+   Examples:
+   ```cmd
+    dkinst install PyC<TAB>
+    dkinst in<TAB>
+   ```
+   The first example will complete to 'dkinst install PyCharm' and the second to 'dkinst install'.
+   <br>
    
 ### Installation Linux
    
@@ -49,7 +63,7 @@ Ubuntu 24 already comes with python 3.12. This file will install dkinst globally
     ```sh
     chmod +x install_dkinst_pipx_debian.sh
     ```
-3. Run the script:
+3. Run the script (runs 'dkinst prereqs' in the end) to install dkinst globally with pipx:
     ```sh
     ./install_dkinst_pipx_debian.sh
     ```

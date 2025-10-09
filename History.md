@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.12.1 - 09.10.2025
+  * Fixed prereqs install in ubuntu installer.
+  * Fixed manual method bugs.
 * 0.12.0 - 08.10.2025
   * Fixed Virtual Keyboard installer (Debian).
   * Added auto-completion for dkinst installer names and methods. 

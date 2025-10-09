@@ -66,7 +66,10 @@ class BaseInstaller:
             "manual": "Manual — run the installer helper directly with custom args.",
         }.get(m, "dkinst — helpers and installers")
 
-        lines: list[str] = [header, ""]
+        if m != "manual":
+            lines: list[str] = [header, ""]
+        else:
+            lines: list[str] = []
 
         if m == "install":
             lines += [
@@ -102,22 +105,8 @@ class BaseInstaller:
                 "  • If an installer doesn’t support in-place updates, it may reinstall.",
                 "  • Extra [args...] are passed through if supported by the installer.",
             ]
-        else:
+        elif m == "manual":
             lines += [
-                "Usage:",
-                "  dkinst help",
-                "  dkinst available",
-                "  dkinst <install|uninstall|update|manual> help",
-                "  dkinst <install|uninstall|update|manual> <installer> help",
-                "  dkinst <install|uninstall|update|manual> <installer> [args...]",
-            ]
-
-        print("\n".join(lines))
-
-    @staticmethod
-    def _show_manual_help():
-        lines: list[str] = []
-        lines += [
                 "Usage:",
                 "  dkinst manual help",
                 "  dkinst manual <installer> help",
@@ -127,6 +116,15 @@ class BaseInstaller:
                 "  • `manual` exposes the installer’s helper parser directly.",
                 "  • `<installer> help` will print that helper’s argparse usage if available.",
                 "  • Use this when you need fine-grained flags not covered by the defaults.",
+            ]
+        else:
+            lines += [
+                "Usage:",
+                "  dkinst help",
+                "  dkinst available",
+                "  dkinst <install|uninstall|update|manual> help",
+                "  dkinst <install|uninstall|update|manual> <installer> help",
+                "  dkinst <install|uninstall|update|manual> <installer> [args...]",
             ]
 
         print("\n".join(lines))
