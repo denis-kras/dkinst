@@ -13,13 +13,16 @@ from rich.console import Console
 
 from atomicshop.wrappers import githubw
 
+from ..infra import registrys
+
+
 console = Console()
 
 
 SCRIPT_NAME: str = "TesseractOCR Manager"
 AUTHOR: str = "Denis Kras"
-VERSION: str = "1.0.0"
-RELEASE_COMMENT: str = "Initial release"
+VERSION: str = "1.0.1"
+RELEASE_COMMENT: str = "Fix PATH setting"
 
 
 # Constants for GitHub wrapper.
@@ -87,7 +90,9 @@ def use_installer(
 
     # Add Tesseract to the PATH.
     if set_path:
-        subprocess.check_call(["setx", "PATH", f"%PATH%;{WINDOWS_TESSERACT_DEFAULT_INSTALLATION_DIRECTORY}"])
+        registrys.ensure_exe_dir_in_path(f'{TESSERACT_VCPKG_TOOLS_DIR}{os.sep}tesseract.exe')
+        registrys.set_environment_variable('TESSDATA_PREFIX', WINDOWS_TESSERACT_DEFAULT_INSTALLATION_DIRECTORY + os.sep + 'tessdata')
+
 
 
 def get_latest_compiled_version() -> str:
@@ -185,10 +190,8 @@ def compile_exe(
     os.makedirs(TESSDATA_DIR, exist_ok=True)
 
     if set_path:
-        run(f'setx PATH "%PATH%;{TESSERACT_VCPKG_TOOLS_DIR}"')
-        # os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + str(TESSERACT_VCPKG_TOOLS_DIR)
-        run(f'setx TESSDATA_PREFIX "{TESSDATA_DIR}"')
-        # os.environ["TESSDATA_PREFIX"] = str(TESSDATA_DIR)
+        registrys.ensure_exe_dir_in_path(f'{TESSERACT_VCPKG_TOOLS_DIR}{os.sep}tesseract.exe')
+        registrys.set_environment_variable('TESSDATA_PREFIX', str(TESSDATA_DIR))
 
     console.print("\nDone. Open a NEW CMD terminal and run [tesseract --version] to verify the installation.", style="green", markup=False)
     return 0
@@ -307,12 +310,12 @@ def main(
                 print("Exiting without updating the path.")
                 return 0
 
+        executable_parent_path: str = os.path.dirname(exe_path)
+        tessdata_parent_path: str = os.path.join(executable_parent_path, "tessdata")
+
         if compile_portable:
             latest_compiled_version: str = get_latest_compiled_version()
             provided_exe_version: str = get_executable_version(exe_path)
-
-            executable_parent_path: str = os.path.dirname(exe_path)
-            tessdata_parent_path: str = os.path.join(executable_parent_path, "tessdata")
 
             # Check if the provided executable path exists and only then overwrite.
             if latest_compiled_version != provided_exe_version:
@@ -353,15 +356,15 @@ def main(
                       f"is already the latest available version: {latest_compiled_version}. "
                       f"No need to update.")
 
+            set_path = True
+
+        if set_path:
             # Remove the old executable from the PATH if it exists.
             if not current_environment_path or current_environment_path.lower() != exe_path.lower():
-                # print(f"Removing old Tesseract executable path from the PATH: {current_environment_path}")
-                # subprocess.check_call(["setx", "PATH", f"%PATH%;{str(Path(current_environment_path).parent)}"])
-
                 # Set the new Tesseract executable path and TESSDATA_PREFIX.
-                subprocess.check_call(["setx", "PATH", f"%PATH%;{executable_parent_path}"])
-                subprocess.check_call(["setx", "TESSDATA_PREFIX", tessdata_parent_path])
-                print(f"Tesseract executable path set to: {exe_path}")
+                registrys.ensure_exe_dir_in_path(exe_path)
+                registrys.set_environment_variable('TESSDATA_PREFIX', tessdata_parent_path)
+                print(f"Tesseract directory path set to: {executable_parent_path}")
                 print(f"TESSDATA_PREFIX set to: {tessdata_parent_path}")
             return 0
 
