@@ -21,8 +21,8 @@ console = Console()
 
 SCRIPT_NAME: str = "TesseractOCR Manager"
 AUTHOR: str = "Denis Kras"
-VERSION: str = "1.0.1"
-RELEASE_COMMENT: str = "Fix PATH setting"
+VERSION: str = "1.0.2"
+RELEASE_COMMENT: str = "Added compiling features dependencies"
 
 
 # Constants for GitHub wrapper.
@@ -36,6 +36,12 @@ WINDOWS_TESSERACT_DEFAULT_INSTALLATION_DIRECTORY: str = r"C:\Program Files\Tesse
 VCPKG_DIR: Path = Path.home() / "vcpkg"
 TRIPLET: str = "x64-windows"  # or "x64-windows-static"
 PORT: str = f"tesseract[training-tools]:{TRIPLET}"
+DEPENDENCIES = [
+    f'curl[ssl,sspi,http2,idn2,psl,ssh,brotli,zstd]:{TRIPLET}',
+    f'libarchive[bzip2,lz4,lzma,zstd,crypto]:{TRIPLET}',
+    PORT,  # tesseract[training-tools]:<triplet>
+]
+
 VSWHERE_EXE: Path = Path(
     os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
 ) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
@@ -49,6 +55,23 @@ TESSERACT_GITHUB_WRAPPER: githubw.GitHubWrapper = githubw.GitHubWrapper(
     repo_name="tesseract",
     branch="main"
 )
+
+TESSERACT_TESSCONFIGS_GITHUB_WRAPPER: githubw.GitHubWrapper = githubw.GitHubWrapper(
+    user_name="tesseract-ocr",
+    repo_name="tessconfigs",
+    branch="main"
+)
+TESSERACT_TESSDATA_FAST_GITHUB_WRAPPER: githubw.GitHubWrapper = githubw.GitHubWrapper(
+    user_name="tesseract-ocr",
+    repo_name="tessdata_fast",
+    branch="main"
+)
+TESSERACT_TESSDATA_BEST_GITHUB_WRAPPER: githubw.GitHubWrapper = githubw.GitHubWrapper(
+    user_name="tesseract-ocr",
+    repo_name="tessdata_best",
+    branch="main"
+)
+
 
 
 def get_latest_installer_version() -> str:
@@ -184,7 +207,8 @@ def compile_exe(
 
     vcpkg = VCPKG_DIR / "vcpkg.exe"
     console.print(f"Creating {PORT} port in vcpkg...", style="blue")
-    run(f'"{vcpkg}" install {PORT} --disable-metrics')
+    # run(f'"{vcpkg}" install {PORT} --disable-metrics')        # minimal, no dependencies.
+    run(f'"{vcpkg}" install ' + ' '.join(DEPENDENCIES) + ' --disable-metrics --recurse')
     run(f'"{vcpkg}" integrate install --disable-metrics')
 
     os.makedirs(TESSDATA_DIR, exist_ok=True)
@@ -247,7 +271,9 @@ def _make_parser():
         help="Return the path of [tesseract] command from the PATH.")
     parser.add_argument(
         "--set-path", action="store_true",
-        help="set the path of [tesseract] command to the PATH, based on any of the installation methods.")
+        help="set the path of [tesseract] command to the PATH, based on any of the installation methods.\n"
+             "Use it with [--exe-path] to set the path to a custom Tesseract executable.\n"
+             "TESSDATA_PREFIX will also be set automatically to the [tessdata] folder near the executable.")
     parser.add_argument(
         "-f", "--force", action="store_true",
         help="Force any action without asking.")

@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.12.3 - 15.10.2025
+  * Fixed Tesseract OCR installer (Windows).
 * 0.12.2 - 12.10.2025
   * Fixed Tessaract OCR Manager set PATH.
 * 0.12.1 - 09.10.2025
