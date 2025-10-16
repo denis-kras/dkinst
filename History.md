@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.12.4 - 16.10.2025
+  * Output dependencies installed only if any.
 * 0.12.3 - 15.10.2025
   * Fixed Tesseract OCR installer (Windows).
 * 0.12.2 - 12.10.2025

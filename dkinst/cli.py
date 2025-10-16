@@ -82,7 +82,7 @@ def _run_dependencies(
     installers_map: dict[str, BaseInstaller],
     done: set[str] | None = None,
     stack: list[str] | None = None,
-) -> int:
+) -> tuple[int, set[str]]:
     """
     Recursively install `installer.dependencies` (list of installer names or
     installer objects) before installing `installer` itself.
@@ -103,7 +103,7 @@ def _run_dependencies(
                 f"Detected circular dependency: {' -> '.join(stack + [dep_name])}",
                 style="red", markup=False
             )
-            return 1
+            return 1, done
 
         dep_inst = installers_map.get(dep_name)
         if dep_inst is None:
@@ -111,7 +111,7 @@ def _run_dependencies(
                 f"Dependency [{dep_name}] referenced by [{installer.name}] was not found.",
                 style="red", markup=False
             )
-            return 1
+            return 1, done
 
         # Platform check for the dependency
         dep_inst._platforms_known()
@@ -121,17 +121,17 @@ def _run_dependencies(
                 f"Dependency [{dep_name}] does not support your platform [{current_platform}].",
                 style="red", markup=False
             )
-            return 1
+            return 1, done
 
         # Admin check for the dependency if required on this platform
         rc = _require_admin_if_needed(dep_inst)
         if rc != 0:
-            return rc
+            return rc, done
 
         # Recurse first so deep deps install in correct order
-        rc = _run_dependencies(dep_inst, installers_map, done, stack + [dep_name])
+        rc, _ = _run_dependencies(dep_inst, installers_map, done, stack + [dep_name])
         if rc != 0:
-            return rc
+            return rc, done
 
         console.print(
             f"Installing dependency [{dep_name}] for [{installer.name}]…",
@@ -139,10 +139,10 @@ def _run_dependencies(
         )
         rc = dep_inst.install()
         if rc not in (0, None):
-            return rc
+            return rc, done
         done.add(dep_name)
 
-    return 0
+    return 0, done
 
 
 def ensure_root_or_reexec() -> None:
@@ -373,13 +373,14 @@ def main() -> int:
 
             # If this is an 'install', resolve & install dependencies first
             if method == "install":
-                rc = _run_dependencies(inst, installers_map)
+                rc,all_dependencies = _run_dependencies(inst, installers_map)
                 if rc != 0:
                     return rc
 
-                console.print(
-                    f"All dependencies for [{inst.name}] are installed. Proceeding to main installer…",
-                    style = "cyan", markup = False)
+                if all_dependencies:
+                    console.print(
+                        f"All dependencies for [{inst.name}] are installed. Proceeding to main installer…",
+                        style = "cyan", markup = False)
 
             # Normal execution: call method and pass through extras (if any)
             target = getattr(inst, method)
