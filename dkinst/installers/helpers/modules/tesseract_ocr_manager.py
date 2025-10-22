@@ -21,8 +21,8 @@ console = Console()
 
 SCRIPT_NAME: str = "TesseractOCR Manager"
 AUTHOR: str = "Denis Kras"
-VERSION: str = "1.0.2"
-RELEASE_COMMENT: str = "Added compiling features dependencies"
+VERSION: str = "1.1.0"
+RELEASE_COMMENT: str = "Added languages and configs download options."
 
 
 # Constants for GitHub wrapper.
@@ -281,6 +281,41 @@ def _make_parser():
         "--exe-path", type=str, default=None,
         help="Path to the Tesseract executable if you want to set it manually. If you set any of the above installation methods, the version will checked against the latest available version in GitHub Releases, and you will be asked if you want to update it.")
 
+    parser.add_argument(
+        "-l", "--languages",
+        choices=["b", "f", "bs", "fs"],
+        metavar="{b,f,bs,fs}",
+        help=("Select the tessdata set: "
+              "b=best trained models, \n"
+              "f=fast (int) models, \n"
+              "bs=scripts of best models, \n"
+              "fs=scripts of fast models.")
+    )
+
+    # list vs download are mutually exclusive
+    lang_group = parser.add_mutually_exclusive_group()
+    lang_group.add_argument(
+        "-ls", "--list",
+        dest="lang_list",
+        action="store_true",
+        help="With -l/--languages, list available files that can be downloaded from the selected tessdata language set."
+    )
+    lang_group.add_argument(
+        "-d", "--download",
+        dest="lang_download",
+        type=lambda s: [x.strip() for x in s.split(",") if x.strip()],
+        metavar="CODES",
+        help=("With -l/--languages (and not --list), comma-separated language/script codes to download "
+              "from the selected tessdata language set. Example: -l bs -d eng,fin\n"
+              "ALL - will download all the files in the category. Example: -l fs -d ALL\n"
+              "The codes can be found with the --list option.\n"
+              "The languages will be downloaded to the tessdata folder from the ENV TESSDATA_PREFIX.")
+    )
+
+    parser.add_argument(
+        "-dc", "--download-configs", action="store_true",
+        help="Download 'configs' and 'tessconfigs' from the 'tessconfigs' repo to ENV TESSDATA_PREFIX folder.")
+
     return parser
 
 
@@ -292,11 +327,27 @@ def main(
         get_path: bool = False,
         set_path: bool = False,
         force: bool = False,
-        exe_path: str = None
+        exe_path: str = None,
+        languages: str = None,
+        lang_list: bool = False,
+        lang_download: list[str] = None,
+        download_configs: bool = False
 ) -> int:
 
     if (installer_version_string_fetch + compile_version_string_fetch + get_path) > 1:
         print("You cannot more than 1 argument of [--installer-version-string-fetch], [--compile-version-string-fetch], [--get-path] arguments at the same time.")
+        return 1
+
+    if (lang_list or lang_download) and languages is None:
+        print("You need to provide the [--languages] argument when using [--list] or [--download] arguments.")
+        return 1
+
+    if lang_list and lang_download:
+        print("You cannot use both [--list] and [--download] arguments at the same time.")
+        return 1
+
+    if lang_download is not None and len(lang_download) == 0:
+        print("You need to provide at least one language/script code to download when using the [--download] argument.")
         return 1
 
     if installer_version_string_fetch or compile_version_string_fetch or get_path:
@@ -422,6 +473,70 @@ def main(
             print("Tesseract OCR compiled successfully.")
             return 0
 
+    if languages:
+        tessdata_path: str | None = os.environ.get("TESSDATA_PREFIX", None)
+        if tessdata_path is None:
+            print("TESSDATA_PREFIX environment variable is not set. Cannot proceed with language operations.")
+            return 1
+
+        if 's' in languages:
+            tessdata_path = os.path.join(tessdata_path, 'script')
+
+        os.makedirs(tessdata_path, exist_ok=True)
+
+        repo_path: str | None = None
+        if languages == 'b':
+            selected_github_wrapper: githubw.GitHubWrapper = TESSERACT_TESSDATA_BEST_GITHUB_WRAPPER
+        elif languages == 'f':
+            selected_github_wrapper: githubw.GitHubWrapper = TESSERACT_TESSDATA_FAST_GITHUB_WRAPPER
+        elif languages == 'bs':
+            repo_path = 'script'
+            selected_github_wrapper: githubw.GitHubWrapper = TESSERACT_TESSDATA_BEST_GITHUB_WRAPPER
+        elif languages == 'fs':
+            repo_path = 'script'
+            selected_github_wrapper: githubw.GitHubWrapper = TESSERACT_TESSDATA_FAST_GITHUB_WRAPPER
+        else:
+            print(f"Invalid languages option: {languages}")
+            return 1
+
+        available_files: list[str] = selected_github_wrapper.list_files(pattern='*.traineddata', recursive=False, path=repo_path)
+
+        if lang_list:
+            print("Available language/script files:")
+            for file in available_files:
+                print(f"- {file.replace('.traineddata', '').replace('script/', '')}")
+            return 0
+
+        if lang_download is not None:
+            for file_name in lang_download:
+                if '.traineddata' not in file_name:
+                    file_name = f"{file_name}.traineddata"
+
+                # If it is a script, adjust the file path.
+                if 's' in languages and 'script' not in file_name:
+                    file_name = f"script/{file_name}"
+
+                if file_name in available_files:
+                    print(f"Downloading language/script file: {file_name} ...")
+                    selected_github_wrapper.download_file(
+                        file_name=file_name,
+                        target_dir=tessdata_path
+                    )
+                    console.print(f"Downloaded {file_name} to {tessdata_path}", style="cyan")
+                else:
+                    console.print(f"Language/script code '{file_name}' not found in the selected tessdata set.", style="red")
+
+    if download_configs:
+        tessdata_path: str | None = os.environ.get("TESSDATA_PREFIX", None)
+        if tessdata_path is None:
+            print("TESSDATA_PREFIX environment variable is not set. Cannot proceed with downloading configs.")
+            return 1
+
+        os.makedirs(tessdata_path, exist_ok=True)
+
+        print(f"Downloading config files.")
+        TESSERACT_TESSCONFIGS_GITHUB_WRAPPER.download_and_extract_branch(target_directory=tessdata_path, archive_remove_first_directory=True)
+        console.print(f"Downloaded configs to {tessdata_path}", style="cyan")
     return 0
 
 

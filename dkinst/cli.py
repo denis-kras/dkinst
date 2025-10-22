@@ -373,7 +373,7 @@ def main() -> int:
 
             # If this is an 'install', resolve & install dependencies first
             if method == "install":
-                rc,all_dependencies = _run_dependencies(inst, installers_map)
+                rc, all_dependencies = _run_dependencies(inst, installers_map)
                 if rc != 0:
                     return rc
 

@@ -1,7 +1,9 @@
 import os
 import ctypes
-import winreg
 from typing import Literal
+
+if os.name == "nt":
+    import winreg
 
 
 def _broadcast_env_change(_ctypes):

@@ -2,6 +2,9 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+import platform
+import sys
+import sysconfig
 
 from rich.console import Console
 
@@ -15,18 +18,15 @@ def _cmd_prereqs() -> int:
     Supports bash, zsh, fish, powershell. Explains cmd.exe limitations.
     """
 
-    # install sudo apt install python3-argcomplete
-    subprocess.check_call(["sudo", "apt", "update"])
-    subprocess.check_call(["sudo", "apt", "install", "-y", "python3-argcomplete"])
-
     exe_name = "dkinst"
-    # Find helper scripts
-    reg = shutil.which("register-python-argcomplete")
-    act = shutil.which("activate-global-python-argcomplete")
+
+    # Ensure argcomplete is installed in a cross-platform way
+    reg = _ensure_argcomplete()
     if not reg:
-        console.print("register-python-argcomplete not found in PATH.", style="red")
         console.print("  Reinstall argcomplete or ensure your Python scripts dir is on PATH.", style="yellow")
         return 1
+
+    act = shutil.which("activate-global-python-argcomplete")  # optional; per-exe is fine
 
     # Decide which shell(s) to target
     targets = [_detect_shell()]
@@ -60,6 +60,53 @@ def _cmd_prereqs() -> int:
 
     console.print("[green]Tab-completion is set up. Open a new shell and try:[/] dkinst install v<Tab>", markup=True)
     return 0
+
+
+def _ensure_argcomplete() -> str | None:
+    """
+    Make sure argcomplete is available and return the path to
+    register-python-argcomplete. Uses apt on Debian/Ubuntu if present,
+    otherwise falls back to pip (user install).
+    """
+    # already there?
+    reg = shutil.which("register-python-argcomplete")
+    if reg:
+        return reg
+
+    # Prefer apt on Linux if available (covers Debian/Ubuntu and WSL)
+    if platform.system() == "Linux" and shutil.which("apt"):
+        try:
+            subprocess.check_call(["sudo", "apt", "update"])
+            subprocess.check_call(["sudo", "apt", "install", "-y", "python3-argcomplete"])
+            reg = shutil.which("register-python-argcomplete")
+            if reg:
+                return reg
+        except Exception as e:
+            console.print(f"[yellow]apt install failed ({e}); falling back to pip --user[/]", markup=True)
+
+    # Fallback: pip in the current interpreter (no sudo; safe on Windows)
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "argcomplete"])
+    except Exception as e:
+        console.print(f"[red]Could not install argcomplete via pip:[/] {e}", markup=True)
+        return None
+
+    # Try again via PATH, then common script locations even if not on PATH
+    reg = shutil.which("register-python-argcomplete")
+    if reg:
+        return reg
+
+    scripts_dir = sysconfig.get_path("scripts") or ""
+    candidates = [os.path.join(scripts_dir, "register-python-argcomplete")]
+    if os.name == "nt":
+        candidates.append(os.path.join(scripts_dir, "register-python-argcomplete.exe"))
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+
+    console.print("[red]register-python-argcomplete not found even after install.[/]", markup=True)
+    return None
+
 
 def _detect_shell() -> str:
     """Best-effort shell detection."""

@@ -1,6 +1,7 @@
 from pathlib import Path
 from types import ModuleType
 from typing import Literal
+import os
 
 from . import _base
 from . helpers.modules import tesseract_ocr_manager
@@ -22,18 +23,13 @@ class TesseractOCR(_base.BaseInstaller):
             self,
             force: bool = False
     ):
-        tesseract_ocr_manager.main(
-            compile_portable=True,
-            set_path=True,
-            exe_path=self.exe_path,
-            force=force
-        )
+        return install_internal(exe_path=self.exe_path, force=force)
 
     def update(
             self,
             force: bool = False
     ):
-        self.install(force=force)
+        return self.install(force=force)
 
     def _show_help(
             self,
@@ -61,3 +57,46 @@ class TesseractOCR(_base.BaseInstaller):
             print("In this installer 'update()' is the same as 'install()'.")
         else:
             raise ValueError(f"Unknown method '{method}'.")
+
+
+def install_internal(
+        exe_path: str,
+        force: bool = False
+) -> int:
+    tesseract_ocr_manager.main(
+        compile_portable=True,
+        set_path=True,
+        exe_path=exe_path,
+        force=force
+    )
+
+    tesseract_ocr_manager.main(
+        languages='f',
+        lang_download=['eng', 'osd'],
+        download_configs=True
+    )
+
+    # Remove duplicate config files from tessdata folder.
+    files_list: list[str] = [
+        'batch',
+        'batch.nochop',
+        'eng.user-patterns',
+        'eng.user-words',
+        'LICENSE',
+        'Makefile.am',
+        'matdemo',
+        'msdemo',
+        'nobatch',
+        'README.md',
+        'segdemo'
+    ]
+
+    # Get tessdata environment variable
+    tessdata_path: str | None = os.environ.get("TESSDATA_PREFIX", None)
+    if tessdata_path is not None:
+        for file_name in files_list:
+            file_path: str = str(Path(tessdata_path) / file_name)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+    return 0
