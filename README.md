@@ -67,6 +67,12 @@ Ubuntu 24 already comes with python 3.12. This file will install dkinst globally
     ```sh
     ./install_dkinst_pipx_debian.sh
     ```
+   
+### Uninstall Auto-completion
+To uninstall the auto-completion from Linux terminals or Windows PowerShell shell (if installed) run:
+   ```cmd
+    dkinst prereqs-uninstall
+   ```
 
 <!-- USAGE EXAMPLES -->
 ## Usage

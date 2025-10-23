@@ -166,31 +166,26 @@ def _register_powershell(reg_cmd: str, exe: str) -> None:
     """
     Register a PowerShell ArgumentCompleter by appending to the user's PS profile.
     """
-    # Determine the profile path by asking PowerShell
-    try:
-        profile = subprocess.check_output(
-            ["powershell", "-NoProfile", "-Command", "$PROFILE"],
-            text=True
-        ).strip()
-    except Exception as e:
-        console.print(f"[red]Failed to determine PowerShell profile path:[/] {e}", markup=True)
-        print("Falling back to default locations.")
-        # Fallback locations (PS 7+ and Windows PowerShell 5.1)
-        docs = Path.home() / "Documents"
-        profile = str(docs / "PowerShell" / "Microsoft.PowerShell_profile.ps1")
-        legacy = docs / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1"
-        # Prefer modern path but create legacy too if it exists already
-        if legacy.exists():
-            profile = str(legacy)
+    hosts = []
+    if shutil.which("pwsh"):  # PowerShell 7+
+        hosts.append("pwsh")
+    if shutil.which("powershell"):  # Windows PowerShell 5.1
+        hosts.append("powershell")
 
-    prof_path = Path(profile)
-    prof_path.parent.mkdir(parents=True, exist_ok=True)
-    # Generate the completer code and append
-    ps_code = subprocess.check_output(
-        [reg_cmd, "--shell", "powershell", exe],
-        text=True
-    )
-    line = ps_code.strip()
+    for host in hosts:
+        try:
+            profile = subprocess.check_output([host, "-NoProfile", "-Command", "$PROFILE"], text=True).strip()
+        except Exception as e:
+            console.print(f"[red]Failed to determine {host} profile:[/] {e}", markup=True)
+            continue
 
-    _append_line(prof_path, line)
-    console.print(f"Updated PowerShell profile [bold]{prof_path}[/].", markup=True)
+        prof_path = Path(profile)
+        prof_path.parent.mkdir(parents=True, exist_ok=True)
+
+        ps_code = subprocess.check_output([reg_cmd, "--shell", "powershell", exe], text=True).strip()
+        _append_line(prof_path, ps_code)
+        console.print(f"Updated {host} profile [bold]{prof_path}[/].", markup=True)
+
+    console.print("[yellow]Note:[/] You may need to adjust your PowerShell execution policy to run scripts\n"
+                  "[cyan]Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force[/]\n"
+                  "[cyan]Get-ExecutionPolicy -List[/]", markup=True)

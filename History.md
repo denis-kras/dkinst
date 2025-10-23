@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.13.0 - 23.10.2025
+  * Added prereqs-uninstall command.
 * 0.12.5 - 22.10.2025
   * Added features to Tesseract OCR installer (Windows).
 * 0.12.4 - 16.10.2025

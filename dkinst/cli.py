@@ -17,7 +17,7 @@ from . import __version__
 from .installers._base import BaseInstaller
 from .installers import _base
 from . import installers
-from .installers.helpers.infra import system, permissions, prereqs
+from .installers.helpers.infra import system, permissions, prereqs, prereqs_uninstall
 
 console = Console()
 
@@ -204,6 +204,7 @@ def _make_parser() -> argparse.ArgumentParser:
         "                               While typing `dkinst install v<Tab>` it will auto-complete to `virtual_keyboard`.\n"
         "                               While typing `dkinst in<Tab>` it will auto-complete to `install`.\n"
         "                               Currently uses argcomplete's global activation method: register-python-argcomplete\n"
+        "  prereqs-uninstall            Uninstall prerequisites for dkinst, removing tab-completion support.\n"
         "  help                         Show this help message.\n"
         "\n"
         "You can use help for any sub-command to see its specific usage.\n"
@@ -232,7 +233,7 @@ def _make_parser() -> argparse.ArgumentParser:
         # sc.add_argument(
         script_arg = sc.add_argument(
             "script",
-            nargs="?",  # optional to allow `install help`
+            # nargs="?",  # optional to allow `install help`
             help="installer script name or 'help'",
         )
 
@@ -245,6 +246,7 @@ def _make_parser() -> argparse.ArgumentParser:
     sub.add_parser("available")
     sub.add_parser("edit-config")
     sub.add_parser("prereqs")
+    sub.add_parser("prereqs-uninstall")
     sub.add_parser("help")
 
     argcomplete.autocomplete(parser)
@@ -289,6 +291,10 @@ def main() -> int:
 
     if namespace.sub == "prereqs":
         return prereqs._cmd_prereqs()
+
+
+    if namespace.sub == "prereqs-uninstall":
+        return prereqs_uninstall._cmd_uninstall_prereqs()
 
     # Methods from the Known Methods list
     if namespace.sub in _base.ALL_METHODS:
