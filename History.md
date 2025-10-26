@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.14.0 - 26.10.2025
+  * Added qTorrent installer (Debian).
+  * Tesseract OCR installer help fix (Windows).
 * 0.13.0 - 23.10.2025
   * Added prereqs-uninstall command.
 * 0.12.5 - 22.10.2025
