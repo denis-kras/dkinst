@@ -1,9 +1,9 @@
 REM cd..
-REM echo Trying to uninstall 'productname_server' in case it was installed.
-REM pip uninstall -y productname_server
+REM echo Trying to uninstall 'yourpackagenamehere' in case it was installed.
+REM pip uninstall -y yourpackagenamehere
 REM pip install -e "%~dp0..."
 pip install --upgrade -e .
-REM rmdir /S /Q productname_server.egg-info
+REM rmdir /S /Q yourpackagenamehere.egg-info
 REM /d tells the command to operate on directories.
 REM /r makes the search recursive, looking into subdirectories.
 REM /r option in the for command is followed by a dot (.), which represents the current directory.

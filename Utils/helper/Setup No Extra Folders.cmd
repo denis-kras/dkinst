@@ -1,7 +1,7 @@
-echo Trying to uninstall 'dkinst' in case it was installed.
-pip uninstall -y dkinst
+echo Trying to uninstall 'yourpackagenamehere' in case it was installed.
+pip uninstall -y yourpackagenamehere
 pip install "%~dp0."
 REM python "%~dp0Setup.py" install
-rmdir /S /Q dkinst.egg-info
+rmdir /S /Q yourpackagenamehere.egg-info
 rmdir /S /Q build
 REM pause

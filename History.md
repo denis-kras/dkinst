@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.15.0 - 30.10.2025
+  * Added Docker installer (Debian).
+  * Minor fixes.
 * 0.14.0 - 26.10.2025
   * Added qTorrent installer (Debian).
   * Tesseract OCR installer help fix (Windows).

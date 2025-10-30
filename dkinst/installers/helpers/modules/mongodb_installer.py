@@ -455,7 +455,7 @@ def main(
         force: bool = False
 ) -> int:
     """
-    Download and install the latest version of MongoDB Community Server on Windows.
+    Download and install the latest version of MongoDB Community Server.
 
     :param latest: bool, if True, the latest non-RC version will be downloaded.
     :param rc: bool, if True, the latest RC version will be downloaded.

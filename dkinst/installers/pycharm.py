@@ -17,9 +17,8 @@ class PyCharm(_base.BaseInstaller):
 
     def install(
             self,
-            force: bool = False
     ):
-        pycharm_installer.main()
+        return pycharm_installer.main()
 
     def _show_help(
             self,

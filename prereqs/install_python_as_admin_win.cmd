@@ -1,5 +1,5 @@
-REM Version 1.0.2
-REM Fixed relative installer path2
+:: Version 1.0.3
+:: Added first powershell show exception
 @echo off
 setlocal
 
@@ -46,6 +46,11 @@ if not "%PV_PATCH%"=="" (
 rem Find the latest patch version
 echo Finding the latest patch version for Python %PYTHON_MAJOR_MINOR%...
 
+:: This is the same as the next, but without the for loop. Since if there will be an exception, we will not get it with for.
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+ "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $mm='%PYTHON_MAJOR_MINOR%'; $maj,$min=$mm -split '\.'; $html=(Invoke-WebRequest 'https://www.python.org/ftp/python/').Content; $rx=[regex]'href=""(?:/ftp/python/)?(\d+)\.(\d+)\.(\d+)/""'; $vers=foreach($m in $rx.Matches($html)){[version]::Parse(($m.Groups[1].Value+'.'+$m.Groups[2].Value+'.'+$m.Groups[3].Value))}; ($vers|?{$_.Major -eq [int]$maj -and $_.Minor -eq [int]$min}|sort -desc|select -f 1).ToString()"
+
+:: Get the version.
 for /f "usebackq delims=" %%I in (`^
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$url = 'https://www.python.org/ftp/python/';" ^
