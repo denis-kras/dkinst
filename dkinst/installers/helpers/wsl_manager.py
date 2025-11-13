@@ -1,13 +1,11 @@
 import sys
-from pathlib import Path
-import os
 import tempfile
 
 from rich.console import Console
 
 from atomicshop import process, virtualization
 
-# from ..infra import permissions
+from .infra import permissions
 
 
 console = Console()

@@ -8,7 +8,7 @@
 
 dkinst is a simple installer mostly for my professional needs, in case I need a one-click installer for a library or a tool.
 So, I will not search for a setup script/line or write one.
-It is written in Python, currently supports 3.12. Hope to support newer versions in the near future.
+It is written in Python, currently tested on 3.13.
 
 
 <!-- AVAILABLE INSTALLERS -->
@@ -28,12 +28,12 @@ To get a local copy up and running follow these simple steps.
 
 ### Installation Windows
 
-1. Install Python 3.12.10 or use the silent installer that will download and install it for you.<br>
+1. Install Python 3.13 or use the silent installer that will download and install it for you.<br>
     1.1. Download the file: /prereqs/install_python_as_admin_win.cmd<br>
     1.2. Run CMD as admin.<br>
-    1.3. In CMD run the script with '3.12.10' argument:
+    1.3. In CMD run the script with '3.13' argument (it will install the latest micro version of 3.13):
     ```cmd
-   install_python_as_admin.cmd 3.12.10
+   install_python_as_admin.cmd 3.13
    ```
    <br>
 2. Install the library using pip:

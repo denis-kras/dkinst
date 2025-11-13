@@ -3,7 +3,7 @@ from types import ModuleType
 from typing import Literal
 
 from . import _base
-from .helpers.modules import pycharm_installer
+from .helpers import pycharm_installer
 
 
 class PyCharm(_base.BaseInstaller):

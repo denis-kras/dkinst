@@ -7,7 +7,7 @@ from rich.console import Console
 
 from atomicshop.wrappers import githubw
 
-from ..infra import permissions, msis, system
+from .infra import permissions, msis, system
 
 
 console = Console()

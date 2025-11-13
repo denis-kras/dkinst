@@ -3,7 +3,7 @@ from types import ModuleType
 from typing import Literal
 
 from . import _base
-from . helpers.modules import wsl_manager
+from . helpers import wsl_manager
 
 
 class WSL(_base.BaseInstaller):

@@ -13,7 +13,7 @@ from rich.console import Console
 
 from atomicshop.wrappers import githubw
 
-from ..infra import registrys
+from .infra import registrys
 
 
 console = Console()

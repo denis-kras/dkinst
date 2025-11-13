@@ -9,7 +9,7 @@ from rich.console import Console
 
 from atomicshop import process, web
 
-from ..infra import system, permissions
+from .infra import system, permissions
 
 
 console = Console()

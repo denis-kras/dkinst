@@ -17,7 +17,7 @@ from atomicshop.permissions import ubuntu_permissions
 if os.name == 'nt':
     from atomicshop import get_process_list
 
-from ..infra import system, msis, permissions
+from .infra import system, msis, permissions
 
 
 console = Console()

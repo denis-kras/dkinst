@@ -41,6 +41,21 @@ def get_ubuntu_version() -> str | None:
     return None
 
 
+def get_architecture() -> str:
+    """Return the system architecture as a string."""
+    arch = platform.machine().lower()
+    if arch in ["x86_64", "amd64"]:
+        return "x64"
+    elif arch in ["i386", "i486", "i586", "i686", "i786", "x86"]:
+        return "x86"
+    elif arch in ["aarch64", "arm64"]:
+        return "arm64"
+    elif arch in ["armv7l", "armv8l", "arm", "aarch32"]:
+        return "arm"
+    else:
+        raise ValueError(f"Unknown architecture: {arch}")
+
+
 def find_file(
         file_name: str,
         directory_path: str

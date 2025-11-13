@@ -5,7 +5,7 @@ from typing import Literal
 from rich.console import Console
 
 from . import _base
-from .helpers.modules import elastic_manager
+from .helpers import elastic_manager
 
 
 console = Console()

@@ -5,7 +5,7 @@ from typing import Literal
 from rich.console import Console
 
 from . import _base
-from .helpers.modules import mongodb_installer
+from .helpers import mongodb_installer
 
 
 console = Console()

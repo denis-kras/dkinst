@@ -1,6 +1,12 @@
 <!-- HISTORY -->
 ## History
 
+* 0.16.0 - 13.11.2025
+  * Added FFMPEG installer (Windows).
+  * Added WinGet installer/Repair (Windows).
+  * Modules folder moved upper on hierarchy.
+  * Added more helpers.
+  * Minor fixes.
 * 0.15.0 - 30.10.2025
   * Added Docker installer (Debian).
   * Minor fixes.

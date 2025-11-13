@@ -3,10 +3,10 @@ from types import ModuleType
 from typing import Literal
 
 from . import _base
-from .helpers.modules import docker_installer
+from .helpers import docker_installer
 
 
-class PyCharm(_base.BaseInstaller):
+class Docker(_base.BaseInstaller):
     def __init__(self):
         super().__init__()
         self.name: str = Path(__file__).stem
