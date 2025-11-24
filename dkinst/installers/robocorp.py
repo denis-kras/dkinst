@@ -4,14 +4,10 @@ from typing import Literal
 import subprocess
 from rich.console import Console
 
-from . import _base, tesseract_ocr, nodejs
-from .helpers.infra import permissions
+from . import _base
 
 
 console = Console()
-
-
-TESSERACT_BIN_EXE_PATH: str = str(Path(__file__).parent.parent / "tesseract_bin" / "tesseract.exe")
 
 
 class Robocorp(_base.BaseInstaller):
@@ -23,19 +19,10 @@ class Robocorp(_base.BaseInstaller):
         self.platforms: list = ["windows"]
         self.helper: ModuleType | None = None
 
+        self.dependencies: list[str] = ['tesseract_ocr', 'nodejs']
+        self.admins: list[str] = ["windows"]
+
     def install(self):
-        if not permissions.is_admin():
-            console.print("Please run this script as an Administrator.", style="red")
-            return 1
-
-        console.print(f"Installing Tesseract OCR", style="blue")
-        tesseract_ocr_wrapper = tesseract_ocr.TesseractOCR()
-        tesseract_ocr_wrapper.install()
-
-        console.print("Installing NodeJS.", style="blue")
-        nodejs_wrapper = nodejs.NodeJS()
-        nodejs_wrapper.install(force=True)
-
         console.print("PIP Installing Robocorp.", style="blue")
         subprocess.check_call(["pip", "install", "--upgrade", "rpaframework"])
 

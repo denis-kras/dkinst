@@ -1,5 +1,5 @@
-:: Version 1.0.3
-:: Added first powershell show exception
+:: Version 1.0.4
+:: Fixed micro verson download
 @echo off
 setlocal
 
@@ -35,12 +35,14 @@ rem ===== Work out LATEST_VERSION =====
 if not "%PV_PATCH%"=="" (
     rem An exact patch was provided, e.g. 3.12.10
     set "LATEST_VERSION=%PV_MAJOR%.%PV_MINOR%.%PV_PATCH%"
-
-    echo Provided version: %LATEST_VERSION%
-    GOTO Finalize
-) else (
-    GOTO FindLatestVersion
+    goto AfterVersion
 )
+
+goto FindLatestVersion
+
+:AfterVersion
+echo Provided version: %LATEST_VERSION%
+goto Finalize
 
 :FindLatestVersion
 rem Find the latest patch version
@@ -72,19 +74,15 @@ if "%LATEST_VERSION%"=="" (
 set "TARGET_DIR=C:\Python%LATEST_VERSION:.=%"
 echo TARGET INSTALLATION DIR: %TARGET_DIR%
 
-rem Download the latest Python installer for the determined version
-echo Fetching the latest installer for Python %LATEST_VERSION%...
+rem Download the Python installer for the determined version
+echo Fetching the installer for Python %LATEST_VERSION%...
 
-for /f "usebackq delims=" %%I in (`^
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$url = 'https://www.python.org/ftp/python/%LATEST_VERSION%';" ^
-    "$page = Invoke-WebRequest -Uri $url;" ^
-    "$installer = ($page.Links | Where-Object { $_.href -match 'python-%LATEST_VERSION%.*%ARCH%.*\.exe$' } | Select-Object -First 1).href;" ^
-    "$installer_url = $url + '/' + $installer;" ^
-    "Write-Output $installer_url"^
-    `) do set "INSTALLER_URL=%%I"
+rem Decide installer file name based on architecture
+set "INSTALLER_FILE=python-%LATEST_VERSION%.exe"
+if /I "%ARCH%"=="amd64" set "INSTALLER_FILE=python-%LATEST_VERSION%-amd64.exe"
 
-rem Debug: Show the installer URL
+set "INSTALLER_URL=https://www.python.org/ftp/python/%LATEST_VERSION%/%INSTALLER_FILE%"
+
 echo INSTALLER_URL: %INSTALLER_URL%
 
 if "%INSTALLER_URL%"=="%INSTALLER_URL:.exe=%" (

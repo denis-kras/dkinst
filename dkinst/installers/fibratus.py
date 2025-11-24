@@ -5,16 +5,12 @@ import subprocess
 import time
 from typing import Literal
 
-from rich.console import Console
-
 from atomicshop.wrappers import githubw
 from atomicshop import filesystem
 
 from . import _base
 from .helpers.infra import msis
-
-
-console = Console()
+from .helpers.infra.printing import printc
 
 
 DEFAULT_INSTALLATION_EXE_PATH = r"C:\Program Files\Fibratus\Bin\fibratus.exe"
@@ -33,7 +29,7 @@ class Fibratus(_base.BaseInstaller):
     def install(
             self
     ):
-        install_fibratus()
+        return install_function()
 
     def _show_help(
             self,
@@ -49,7 +45,7 @@ class Fibratus(_base.BaseInstaller):
             raise ValueError(f"Unknown method '{method}'.")
 
 
-def install_fibratus(
+def install_function(
         installation_file_download_directory: str = None,
         place_to_download_file: Literal['working', 'temp', 'script'] = 'temp',
         remove_file_after_installation: bool = True
@@ -91,21 +87,21 @@ def install_fibratus(
             (f"Fibratus installation failed. The executable was not found after "
              f"{str(WAIT_SECONDS_FOR_EXECUTABLE_TO_APPEAR_AFTER_INSTALLATION)} seconds.\n"
              f"{DEFAULT_INSTALLATION_EXE_PATH}")
-        console.print(message, style="red")
+        printc(message, color="red")
         return 1
 
     # Check if the installation was successful
     try:
         result = subprocess.run([DEFAULT_INSTALLATION_EXE_PATH], capture_output=True, text=True)
     except FileNotFoundError:
-        console.print("Fibratus executable not found.", style="red")
+        printc("Fibratus executable not found.", color="red")
         return 1
 
     if result.returncode == 0:
-        console.print("Fibratus installed successfully. Please restart.", style="green")
+        printc("Fibratus installed successfully. Please restart.", color="green")
     else:
-        console.print("Fibratus installation failed.", style="red")
-        console.print(result.stderr)
+        printc("Fibratus installation failed.", color="red")
+        printc(result.stderr, color='red')
         return 1
 
     # Wait for the installation to finish before removing the file.

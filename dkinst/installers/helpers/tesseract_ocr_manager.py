@@ -1,13 +1,10 @@
 import tempfile
 import subprocess
 import ctypes
-import json
 import os
 from pathlib import Path
 import shutil
 import sys
-import time
-import urllib.request
 
 from rich.console import Console
 
@@ -21,8 +18,8 @@ console = Console()
 
 SCRIPT_NAME: str = "TesseractOCR Manager"
 AUTHOR: str = "Denis Kras"
-VERSION: str = "1.1.0"
-RELEASE_COMMENT: str = "Added languages and configs download options."
+VERSION: str = "1.1.1"
+RELEASE_COMMENT: str = "Moved Build Tools to dependencies."
 
 
 # Constants for GitHub wrapper.
@@ -42,9 +39,6 @@ DEPENDENCIES = [
     PORT,  # tesseract[training-tools]:<triplet>
 ]
 
-VSWHERE_EXE: Path = Path(
-    os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
-) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
 TESSERACT_VCPKG_TOOLS_DIR: Path = VCPKG_DIR / "installed" / TRIPLET / "tools" / "tesseract"
 TESSERACT_VCPKG_TOOLS_EXE: Path = TESSERACT_VCPKG_TOOLS_DIR / 'tesseract.exe'
 TESSDATA_DIR: Path = TESSERACT_VCPKG_TOOLS_DIR / "tessdata"
@@ -117,7 +111,6 @@ def use_installer(
         registrys.set_environment_variable('TESSDATA_PREFIX', WINDOWS_TESSERACT_DEFAULT_INSTALLATION_DIRECTORY + os.sep + 'tessdata')
 
 
-
 def get_latest_compiled_version() -> str:
     """
     Get the latest compiled version of Tesseract OCR.
@@ -133,7 +126,7 @@ def compile_exe(
         set_path: bool = False
 ) -> int:
     """
-    Compile the ltest Tesseract version from source.
+    Compile the latest Tesseract version from source.
     """
 
     def run(cmd, *, ok=(0,), **kw):
@@ -149,50 +142,12 @@ def compile_exe(
     def have(exe):
         return shutil.which(exe) is not None
 
-    def have_msvc():
-        if not VSWHERE_EXE.exists():
-            return False
-
-        try:
-            out = subprocess.check_output(
-                f'"{VSWHERE_EXE}" -latest -products Microsoft.VisualStudio.Product.BuildTools -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json',
-                shell=True, text=True)
-            return bool(json.loads(out))
-        except subprocess.CalledProcessError:
-            return False
-
-    def install_build_tools() -> int:
-        if have_msvc():
-            return 0
-
-        print("Installing Visual Studio 2022 Build Tools + C++ workload …")
-        url = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
-        with tempfile.TemporaryDirectory() as td:
-            exe = Path(td) / "vs_BuildTools.exe"
-            urllib.request.urlretrieve(url, exe)
-            run(
-                f'"{exe}" --passive --wait --norestart '
-                '--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended',
-                ok=(0, 3010, 1641))
-        print("Waiting for Build Tools to register …")
-        for _ in range(60):
-            if have_msvc():
-                return 0
-            time.sleep(5)
-
-        console.print("Timed out waiting for Build Tools to register.", style="red")
-        return 1
-
     if os.name != "nt":
         console.print("This script is for Windows only.", style="red")
         return 1
     if not is_admin():
         console.print("This script requires administrative privileges to run.", style="red")
         return 1
-
-    execution_result: int = install_build_tools()
-    if execution_result != 0:
-        return execution_result
 
     if not have("git"):
         console.print("Git is not installed. Please install Git for Windows.", style="red")

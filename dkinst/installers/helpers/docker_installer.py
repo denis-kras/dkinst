@@ -48,12 +48,9 @@ def is_docker_installed():
         return False
 
 
-def add_current_user_to_docker_group(print_kwargs: dict = None):
+def add_current_user_to_docker_group():
     """
     The function will add the current user to the docker group.
-
-    :param print_kwargs: dict, the print arguments.
-    :return:
     """
     # Check if current user that executed the script is a sudo user. If not, use the current user.
     sudo_executer_username: str = ubuntu_permissions.get_sudo_executer_username()

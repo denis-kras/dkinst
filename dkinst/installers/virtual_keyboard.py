@@ -7,15 +7,11 @@ import tempfile
 import shutil
 import shlex
 
-from rich.console import Console
-
 from atomicshop.wrappers.githubw import GitHubWrapper
 
 from . import _base
 from .helpers.infra import system
-
-
-console = Console()
+from .helpers.infra.printing import printc
 
 
 GIT_REPO_URL: str = "https://github.com/Vishram1123/gjs-osk"
@@ -61,14 +57,14 @@ def install_function():
     print(f"Detected Gnome version: {gnome_version}")
 
     if is_extension_installed(UUID) and is_extension_enabled(UUID):
-        console.print("GJS OSK extension is already installed and enabled.", style="bold yellow")
+        printc("GJS OSK extension is already installed and enabled.", color="yellow")
         return 0
     elif is_extension_installed(UUID) and not is_extension_enabled(UUID):
-        console.print("GJS OSK extension is already installed but not enabled. Enabling now...", style="bold yellow")
+        printc("GJS OSK extension is already installed but not enabled. Enabling now...", color="yellow")
         system.execute_bash_script_string([
             f"gnome-extensions enable {UUID} || true"
         ])
-        console.print("GJS OSK extension has been enabled.", style="bold green")
+        printc("GJS OSK extension has been enabled.", color="green")
         return 0
 
     if int(gnome_version.split(".")[0]) > 45:
@@ -84,7 +80,7 @@ def install_function():
         repo_url=GIT_REPO_URL
     )
 
-    downloaded_release_path: Path = github_wrapper.download_latest_release(
+    downloaded_release_path: str = github_wrapper.download_latest_release(
         target_directory=temp_dir,
         asset_pattern=f"*{channel}*"
     )
@@ -115,8 +111,8 @@ gnome-extensions install --force "{downloaded_release_path}"
     # Cleanup
     shutil.rmtree(temp_dir)
 
-    console.print("Installation complete. Please LOG OUT/LOG IN to apply changes.\n"
-                  "You can enable it manually or run [dkinst install virtual_keyboard] again to enable.", style="bold green", markup=False)
+    printc("Installation complete. Please LOG OUT/LOG IN to apply changes.\n"
+                  "You can enable it manually or run [dkinst install virtual_keyboard] again to enable.", color="green")
 
     return 0
 

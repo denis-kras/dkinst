@@ -16,6 +16,8 @@ class TesseractOCR(_base.BaseInstaller):
         self.platforms: list = ["windows"]
         self.helper: ModuleType = tesseract_ocr_manager
 
+        self.dependencies: list[str] = ['vs_build_tools_2022']
+
         self.dir_path: str = str(Path(self.base_path) / self.name)
         self.exe_path: str = str(Path(self.dir_path) / "tesseract.exe")
 

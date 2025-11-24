@@ -414,6 +414,6 @@ def main(
 
 
 if __name__ == '__main__':
-    nodejs_parser = _make_parser()
-    args = nodejs_parser.parse_args()
+    ready_parser = _make_parser()
+    args = ready_parser.parse_args()
     sys.exit(main(**vars(args)))
