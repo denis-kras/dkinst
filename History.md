@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.18.0 - 24.11.2025
+  * Added pbtk python script installer (Windows + Debian).
 * 0.17.0 - 24.11.2025
   * Split VS Build Tools installer from Tesseract OCR Manager (Windows).
 * 0.16.0 - 13.11.2025

@@ -3,35 +3,28 @@ from types import ModuleType
 from typing import Literal
 import os
 
+from atomicshop.wrappers import githubw
+
 from . import _base
-from . helpers import tesseract_ocr_manager
+from .helpers.infra.printing import printc
 
 
-class TesseractOCR(_base.BaseInstaller):
+class PBTK(_base.BaseInstaller):
     def __init__(self):
         super().__init__()
         self.name: str = Path(__file__).stem
-        self.description: str = "Tesseract OCR Installer"
-        self.version: str = tesseract_ocr_manager.VERSION
-        self.platforms: list = ["windows"]
-        self.helper: ModuleType = tesseract_ocr_manager
-
-        self.dependencies: list[str] = ['vs_build_tools_2022']
+        self.description: str = "pbtk script Installer"
+        self.version: str = "1.0.0"
+        self.platforms: list = ["windows", "debian"]
+        self.helper: ModuleType | None = None
 
         self.dir_path: str = str(Path(self.base_path) / self.name)
-        self.exe_path: str = str(Path(self.dir_path) / "tesseract.exe")
 
     def install(
             self,
             force: bool = False
     ):
-        return install_function(exe_path=self.exe_path, force=force)
-
-    def update(
-            self,
-            force: bool = False
-    ):
-        return self.install(force=force)
+        return install_function(target_directory=self.dir_path)
 
     def _show_help(
             self,
@@ -59,50 +52,28 @@ class TesseractOCR(_base.BaseInstaller):
                 "\n"
             )
             print(method_help)
-        elif method == "update":
-            print("In this installer 'update()' is the same as 'install()'.")
         else:
             raise ValueError(f"Unknown method '{method}'.")
 
 
 def install_function(
-        exe_path: str,
-        force: bool = False
+        target_directory: str | None,
 ) -> int:
-    tesseract_ocr_manager.main(
-        compile_portable=True,
-        set_path=True,
-        exe_path=exe_path,
-        force=force
+    printc("Downloading pbtk from GitHub...", color="blue")
+
+    os.makedirs(target_directory, exist_ok=True)
+
+    github_wrapper: githubw.GitHubWrapper = githubw.GitHubWrapper(
+        user_name="marin-m",
+        repo_name="pbtk",
+        branch="master"
     )
 
-    tesseract_ocr_manager.main(
-        languages='f',
-        lang_download=['eng', 'osd'],
-        download_configs=True
+    github_wrapper.download_and_extract_branch(
+        target_directory=target_directory,
+        archive_remove_first_directory=True
     )
 
-    # Remove duplicate config files from tessdata folder.
-    files_list: list[str] = [
-        'batch',
-        'batch.nochop',
-        'eng.user-patterns',
-        'eng.user-words',
-        'LICENSE',
-        'Makefile.am',
-        'matdemo',
-        'msdemo',
-        'nobatch',
-        'README.md',
-        'segdemo'
-    ]
-
-    # Get tessdata environment variable
-    tessdata_path: str | None = os.environ.get("TESSDATA_PREFIX", None)
-    if tessdata_path is not None:
-        for file_name in files_list:
-            file_path: str = str(Path(tessdata_path) / file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+    printc(f"pbtk instaled to: {target_directory}", color="green")
 
     return 0
