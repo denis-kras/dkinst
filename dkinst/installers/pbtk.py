@@ -32,24 +32,7 @@ class PBTK(_base.BaseInstaller):
     ) -> None:
         if method == "install":
             method_help: str = (
-                "This method uses the [tesseract_ocr_manager.py] with the following arguments:\n"
-                "  --compile-portable               - compile the latest tesseract executable.\n"
-                "  --set-path                       - set system PATH variable to provided executable.\n"
-                f'  --exe-path "{self.exe_path}"                      - Specify the target executable\n'
-                "\n"
-                "  --force                          - force reinstallation/recompilation of the latest version even if executable is already present.\n"
-                "  This one is used only if you provide it explicitly to the 'install' command. Example:\n"
-                "    dkinst install tesseract_ocr force\n"
-                "  --languages f                    - Specify language packs branch. 'f' is for 'fast'.\n"
-                "  --download eng,osd               - Specify language packs to download.\n"
-                "  --download-configs               - Download config files.\n"
-                "Note: the specific languages and configs arguments, mimic the EXE installer behavior.\n"
-                "\n"
-                "You can also use the 'manual' method to provide custom arguments to the helper script.\n"
-                "Example:\n"
-                "  dkinst manual tesseract_ocr help\n"
-                "  dkinst manual tesseract_ocr --compile-portable --set-path\n"
-                "\n"
+                "This method downloads the master branch of the pbtk github repo to the default dkinst portable forlder in config file.\n"
             )
             print(method_help)
         else:

@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.19.0 - 24.11.2025
+  * Added Total Commander installer (Windows).
 * 0.18.0 - 24.11.2025
   * Added pbtk python script installer (Windows + Debian).
 * 0.17.0 - 24.11.2025
