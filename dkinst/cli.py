@@ -80,6 +80,7 @@ def cmd_available() -> None:
 def _run_dependencies(
     installer: BaseInstaller,
     installers_map: dict[str, BaseInstaller],
+    method: Literal["install", "uninstall", "upgrade"] = "install",
     done: set[str] | None = None,
     stack: list[str] | None = None,
 ) -> tuple[int, set[str]]:
@@ -87,6 +88,14 @@ def _run_dependencies(
     Recursively install `installer.dependencies` (list of installer names or
     installer objects) before installing `installer` itself.
     Returns 0 on success; non-zero aborts the whole command.
+
+    :param installer: The installer whose dependencies to install.
+    :param installers_map: A map of installer name -> installer instance.
+    :param method: The method for which dependencies are being resolved.
+    :param done: Set of already installed dependency names.
+    :param stack: Current dependency resolution stack (for circular dep detection).
+
+    :return: (return code, set of installed dependency names)
     """
     done = done or set()
     stack = stack or []
@@ -123,23 +132,37 @@ def _run_dependencies(
             )
             return 1, done
 
+        # Decide which method to run on the dependency:
+        #  - Prefer the same 'method' as the main command, if supported.
+        #  - Otherwise fall back to 'install' (to ensure the dep is present).
+        known_methods: list[str] = _base.get_known_methods(dep_inst)
+        dep_method_name: Literal["install", "uninstall", "upgrade"] = method if method in known_methods else "install"
+
         # Admin check for the dependency if required on this platform. Dependencies are always checked only for the 'install' method.
-        rc = _require_admin_if_needed(dep_inst, method="install")
+        rc = _require_admin_if_needed(dep_inst, method=dep_method_name)
         if rc != 0:
             return rc, done
 
         # Recurse first so deep deps install in correct order
-        rc, _ = _run_dependencies(dep_inst, installers_map, done, stack + [dep_name])
+        rc, _ = _run_dependencies(dep_inst, installers_map, method, done, stack + [dep_name])
         if rc != 0:
             return rc, done
 
-        console.print(
-            f"Installing dependency [{dep_name}] for [{installer.name}]…",
-            style="green", markup=False
+        # Finally, actually run the chosen method on the dependency
+        verb = "Installing" if dep_method_name == "install" else (
+            "Upgrading" if dep_method_name == "upgrade" else f"Running '{dep_method_name}' for"
         )
-        rc = dep_inst.install()
+        console.print(
+            f"{verb} dependency [{dep_name}] for [{installer.name}]…",
+            style="green",
+            markup=False,
+        )
+
+        dep_func = getattr(dep_inst, dep_method_name)
+        rc = dep_func()
         if rc not in (0, None):
             return rc, done
+
         done.add(dep_name)
 
     return 0, done
@@ -413,16 +436,18 @@ def main() -> int:
                 inst._show_help(method)
                 return 0
 
-            # If this is an 'install', resolve & install dependencies first
-            if method == "install":
-                rc, all_dependencies = _run_dependencies(inst, installers_map)
+            # For 'install' and 'upgrade', resolve dependencies first
+            if method in ("install", "upgrade"):
+                rc, all_dependencies = _run_dependencies(inst, installers_map, method=method)
                 if rc != 0:
                     return rc
 
                 if all_dependencies:
                     console.print(
                         f"All dependencies for [{inst.name}] are installed. Proceeding to main installer…",
-                        style = "cyan", markup = False)
+                        style="cyan",
+                        markup=False,
+                    )
 
             # Normal execution: call method and pass through extras (if any)
             target = getattr(inst, method)
