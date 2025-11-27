@@ -17,10 +17,11 @@ class Robocorp(_base.BaseInstaller):
         self.description: str = "Robocorp Installer"
         self.version: str = "1.0.2"
         self.platforms: list = ["windows"]
-        self.helper: ModuleType | None = None
 
         self.dependencies: list[str] = ['tesseract_ocr', 'nodejs']
-        self.admins: list[str] = ["windows"]
+        self.admins: dict = {
+            "windows": ["install", "upgrade"]
+        }
 
     def install(self):
         console.print("PIP Installing Robocorp.", style="blue")

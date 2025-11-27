@@ -16,7 +16,9 @@ class Chocolatey(_base.BaseInstaller):
         self.platforms: list = ["windows"]
         self.helper: ModuleType = chocolatey_installer
 
-        self.admins: list = ["windows"]
+        self.admins: dict = {
+            "windows": ["install", "upgrade"]
+        }
 
     def install(
             self,

@@ -123,8 +123,8 @@ def _run_dependencies(
             )
             return 1, done
 
-        # Admin check for the dependency if required on this platform
-        rc = _require_admin_if_needed(dep_inst)
+        # Admin check for the dependency if required on this platform. Dependencies are always checked only for the 'install' method.
+        rc = _require_admin_if_needed(dep_inst, method="install")
         if rc != 0:
             return rc, done
 
@@ -156,29 +156,65 @@ def ensure_root_or_reexec() -> None:
     os.execvp("sudo", ["sudo", "-E", exe] + sys.argv[1:])
 
 
-def _require_admin_if_needed(installer: BaseInstaller) -> int:
+def _require_admin_if_needed(
+        installer: BaseInstaller,
+        method: Literal["install", "uninstall", "upgrade"] = "install"
+) -> int:
     """
-    If the installer declares an `admins` list (subset of its `platforms`)
-    and the current platform is in that list, enforce admin privileges.
+    Enforce admin privileges when requested by the installer.
+
+    installer.admins can be:
+
+      - A dict mapping platform -> list of methods that require admin.
+        Example:
+            {
+                "windows": ["install", "upgrade"],
+                "debian": ["install"],
+            }
+
+      - (Legacy) a list of platforms, meaning all methods require admin on
+        those platforms.
+
     Returns 0 if ok; non-zero to abort.
     """
-    admins = getattr(installer, "admins", None) or []
+    admins = getattr(installer, 'admins', None)
     if not admins:
         return 0
+
     current_platform = system.get_platform()
-    if current_platform in admins and not permissions.is_admin():
+    needs_admin = False
 
-        console.print("This action requires administrator privileges.", style='red')
-        if current_platform == "debian":
-            # Auto-elevate; this never returns on success
-            ensure_root_or_reexec()
+    if isinstance(admins, dict):
+        methods_for_platform = admins.get(current_platform) or []
+        # Be tolerant: allow string or list
+        if isinstance(methods_for_platform, str):
+            methods_for_platform = [methods_for_platform]
+        methods_for_platform = [m.lower() for m in methods_for_platform]
 
-            # If we get here, sudo failed
-            venv = os.environ.get('VIRTUAL_ENV', None)
-            if venv:
-                print(f'Try: sudo "{venv}/bin/dkinst" install mongodb')
-        return 1
-    return 0
+        if method.lower() in methods_for_platform:
+            needs_admin = True
+    else:
+        raise ValueError(f"installer.admins has unsupported type: {type(admins)}")
+
+    if not needs_admin:
+        return 0
+
+    # If we require admin but already have it, we're fine
+    if permissions.is_admin():
+        return 0
+
+    console.print('This action requires administrator privileges.', style='red')
+
+    if current_platform == 'debian':
+        # Auto-elevate; this never returns on success
+        ensure_root_or_reexec()
+
+        # If we get here, sudo failed
+        venv = os.environ.get('VIRTUAL_ENV', None)
+        if venv:
+            print(f'Try: sudo "{venv}/bin/dkinst" {method} {installer.name}')
+
+    return 1
 
 
 def _make_parser() -> argparse.ArgumentParser:
@@ -327,9 +363,9 @@ def main() -> int:
                 console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].", style='red', markup=False)
                 return 1
 
-            # If this is an install, enforce admin privileges when requested.
-            if method in ["install", "manual"] and "help" not in extras:
-                rc = _require_admin_if_needed(inst)
+            # Enforce admin privileges for this method when requested, unless the user is just asking for help.
+            if 'help' not in extras:
+                rc = _require_admin_if_needed(inst, method)
                 if rc != 0:
                     return rc
 

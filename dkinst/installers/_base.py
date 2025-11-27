@@ -32,8 +32,11 @@ class BaseInstaller:
         # If the installer has any prerequisites, they will be installed first. The prerequisites should be the names of other installers in dkinst.
         self.dependencies: list[str] = []
 
-        # The list of platforms that require admin rights to install this application. Off course, it should be a subset of self.platforms.
-        self.admins: list[str] = []
+        # The dict of platforms that require admin rights to install this application.
+        # Off course, it should be a subset of self.platforms.
+        # Example: {"windows": ["install", "upgrade"], "debian": ["install"]}
+        # Admin rights are required for windows with methods of "install" and "upgrade", and for debian with method of "install" only.
+        self.admins: dict = {}
 
         self.base_path: str = INSTALLATION_PATH_PORTABLE_WINDOWS
         self.dir_path: str | None = None  # Path to the installation directory of the installed application, if applicable. Example: Path(self.base_path) / self.name

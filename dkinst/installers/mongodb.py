@@ -18,9 +18,11 @@ class MongoDB(_base.BaseInstaller):
         self.description: str = "MongoDB + Compass Installer"
         self.version: str = mongodb_installer.VERSION
         self.platforms: list = ["windows", "debian"]
-        self.helper: ModuleType | None = mongodb_installer
+        self.helper: ModuleType = mongodb_installer
 
-        self.admins: list[str] = ["debian"]
+        self.admins: dict = {
+            "debian": ["install"]
+        }
 
     def install(
             self,
