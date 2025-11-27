@@ -9,7 +9,7 @@ from .helpers.infra.printing import printc
 WINGET_PACKAGE_ID: str = "Ghisler.TotalCommander"
 
 
-class FFMPEG(_base.BaseInstaller):
+class TotalCommander(_base.BaseInstaller):
     def __init__(self):
         super().__init__()
         self.name: str = Path(__file__).stem
@@ -24,10 +24,10 @@ class FFMPEG(_base.BaseInstaller):
     ):
         return install_function()
 
-    def update(
+    def upgrade(
             self,
     ):
-        return update_function()
+        return upgrade_function()
 
     def uninstall(
             self,
@@ -36,15 +36,15 @@ class FFMPEG(_base.BaseInstaller):
 
     def _show_help(
             self,
-            method: Literal["install", "uninstall", "update"]
+            method: Literal["install", "uninstall", "upgrade"]
     ) -> None:
         if method == "install":
             method_help: str = (
                 "This method uses WinGet to install Ghisler.TotalCommander.\n"
             )
             print(method_help)
-        elif method == "update":
-            print("Uses WinGet to update Ghisler.TotalCommander.")
+        elif method == "upgrade":
+            print("Uses WinGet to upgrade Ghisler.TotalCommander.")
         elif method == "uninstall":
             print("Uses WinGet to uninstall Ghisler.TotalCommander.")
         else:
@@ -60,10 +60,10 @@ def install_function() -> int:
     return 0
 
 
-def update_function() -> int:
+def upgrade_function() -> int:
     rc: int = wingets.upgrade_package(WINGET_PACKAGE_ID)
     if rc != 0:
-        printc("Failed to update TotalCommander.", color="red")
+        printc("Failed to upgrade TotalCommander.", color="red")
         return rc
 
     return 0

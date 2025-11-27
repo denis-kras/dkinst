@@ -27,7 +27,7 @@ class TesseractOCR(_base.BaseInstaller):
     ):
         return install_function(exe_path=self.exe_path, force=force)
 
-    def update(
+    def upgrade(
             self,
             force: bool = False
     ):
@@ -35,7 +35,7 @@ class TesseractOCR(_base.BaseInstaller):
 
     def _show_help(
             self,
-            method: Literal["install", "uninstall", "update"]
+            method: Literal["install", "uninstall", "upgrade"]
     ) -> None:
         if method == "install":
             method_help: str = (
@@ -59,8 +59,8 @@ class TesseractOCR(_base.BaseInstaller):
                 "\n"
             )
             print(method_help)
-        elif method == "update":
-            print("In this installer 'update()' is the same as 'install()'.")
+        elif method == "upgrade":
+            print("In this installer 'upgrade()' is the same as 'install()'.")
         else:
             raise ValueError(f"Unknown method '{method}'.")
 

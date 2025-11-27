@@ -58,11 +58,11 @@ class Robocorp(_base.BaseInstaller):
         with open(window_file_path, "w") as file:
             file.write(file_content)
 
-        console.print("Robocorp Framework installation/update finished.", style="green")
+        console.print("Robocorp Framework installation/upgrade finished.", style="green")
 
         return 0
 
-    def update(
+    def upgrade(
             self,
             force: bool = False
     ):
@@ -70,7 +70,7 @@ class Robocorp(_base.BaseInstaller):
 
     def _show_help(
             self,
-            method: Literal["install", "uninstall", "update"]
+            method: Literal["install", "uninstall", "upgrade"]
     ) -> None:
         if method == "install":
             method_help: str = (
@@ -85,7 +85,7 @@ class Robocorp(_base.BaseInstaller):
                 "\n"
             )
             print(method_help)
-        elif method == "update":
-            print("In this installer 'update()' is the same as 'install()'.")
+        elif method == "upgrade":
+            print("In this installer 'upgrade()' is the same as 'install()'.")
         else:
             raise ValueError(f"Unknown method '{method}'.")

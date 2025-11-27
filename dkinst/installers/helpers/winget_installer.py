@@ -15,8 +15,8 @@ from .infra.printing import printc
 console = Console()
 
 
-VERSION: str = "1.0.0"
-"""Initial"""
+VERSION: str = "1.0.1"
+"""code cleaning"""
 
 
 AKA_MS_GETWINGET_URL: str = "https://aka.ms/getwinget"
@@ -28,9 +28,9 @@ def is_winget_installed() -> bool:
     Check if winget command exists.
     """
     print("Checking if winget is installed...")
-    winget_path: str = shutil.which("winget")
-    if winget_path:
-        print(f"winget is installed at: {winget_path}")
+    file_path: str = shutil.which("winget")
+    if file_path:
+        print(f"winget is installed at: {file_path}")
         return True
     else:
         print("winget is not installed.")

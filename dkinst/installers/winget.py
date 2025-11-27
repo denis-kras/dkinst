@@ -30,7 +30,7 @@ class PyCharm(_base.BaseInstaller):
 
     def _show_help(
             self,
-            method: Literal["install", "uninstall", "update"]
+            method: Literal["install", "uninstall", "upgrade"]
     ) -> None:
         if method == "install":
             method_help: str = (

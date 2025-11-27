@@ -45,12 +45,12 @@ class BaseInstaller:
     def uninstall(self):
         raise NotImplementedError("Method not implemented by the subclass. Uninstall manually.")
 
-    def update(self):
-        raise NotImplementedError("Method not implemented by the subclass. Update manually.")
+    def upgrade(self):
+        raise NotImplementedError("Method not implemented by the subclass. Upgrade manually.")
 
     @staticmethod
     def _show_help(
-            method: Literal["install", "uninstall", "update"]
+            method: Literal["install", "uninstall", "upgrade"]
     ) -> None:
         """
         Print default help for a given method. Can be called as:
@@ -62,7 +62,7 @@ class BaseInstaller:
         header = {
             "install": "Install — download and set up an application/installer.",
             "uninstall": "Uninstall — remove an application installed by this tool.",
-            "update": "Update — update an application to the latest supported version.",
+            "upgrade": "Upgrade — upgrade an application to the latest supported version.",
             "manual": "Manual — run the installer helper directly with custom args.",
         }.get(m, "dkinst — helpers and installers")
 
@@ -94,15 +94,15 @@ class BaseInstaller:
                 "  • Some installers support silent removal flags; check per-installer help.",
                 "  • Extra [args...] are passed through if the installer supports them.",
             ]
-        elif m == "update":
+        elif m == "upgrade":
             lines += [
                 "Usage:",
-                "  dkinst update help",
-                "  dkinst update <installer> help",
-                "  dkinst update <installer> [args...]",
+                "  dkinst upgrade help",
+                "  dkinst upgrade <installer> help",
+                "  dkinst upgrade <installer> [args...]",
                 "",
                 "Notes:",
-                "  • If an installer doesn’t support in-place updates, it may reinstall.",
+                "  • If an installer doesn’t support in-place upgrades, it may reinstall.",
                 "  • Extra [args...] are passed through if supported by the installer.",
             ]
         elif m == "manual":
@@ -122,9 +122,9 @@ class BaseInstaller:
                 "Usage:",
                 "  dkinst help",
                 "  dkinst available",
-                "  dkinst <install|uninstall|update|manual> help",
-                "  dkinst <install|uninstall|update|manual> <installer> help",
-                "  dkinst <install|uninstall|update|manual> <installer> [args...]",
+                "  dkinst <install|uninstall|upgrade|manual> help",
+                "  dkinst <install|uninstall|upgrade|manual> <installer> help",
+                "  dkinst <install|uninstall|upgrade|manual> <installer> [args...]",
             ]
 
         print("\n".join(lines))

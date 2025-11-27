@@ -133,18 +133,18 @@ def install_docker_ubuntu(
 
         script = f"""
         # Step 1: Set up Docker's apt repository
-        sudo apt-get update
-        sudo apt-get install -y ca-certificates curl gnupg
+        sudo apt update
+        sudo apt install -y ca-certificates curl gnupg
         sudo install -m 0755 -d /etc/apt/keyrings
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
         sudo chmod a+r /etc/apt/keyrings/docker.gpg
         
         # Add the repository to Apt sources
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
+        sudo apt update
         
         # Step 2: Install the Docker packages
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+        sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
         
         # Step 3: Verify the installation
         # sudo docker run hello-world
@@ -255,9 +255,9 @@ need_cmd() {
   local pkg=${2:-$1}               # default package == command
   if ! command -v "$cmd" &>/dev/null; then
     echo "[*] $cmd not found – installing $pkg ..."
-    apt-get update -qq
+    apt update -qq
     DEBIAN_FRONTEND=noninteractive \
-      apt-get install -y --no-install-recommends "$pkg" || \
+      apt install -y --no-install-recommends "$pkg" || \
       die "Unable to install required package: $pkg"
   fi
 }
@@ -286,10 +286,10 @@ echo "Packages to install:"
 echo "$PKGS"
 
 echo "[*] Downloading packages and all dependencies …"
-apt-get update -qq
-apt-get clean
+apt update -qq
+apt clean
 mkdir -p /var/cache/apt/archives/partial
-apt-get -y --download-only --reinstall install $PKGS
+apt -y --download-only --reinstall install $PKGS
 cp -v /var/cache/apt/archives/*.deb "$OUTDIR/packages/"
 echo "[*] $(ls "$OUTDIR/packages" | wc -l) .deb files written to packages/"
 
@@ -397,7 +397,7 @@ fi
 # 2. Update metadata – but ONLY from our offline list
 # ------------------------------------------------------------------------------
 echo "[*] Updating APT metadata – offline only …"
-sudo apt-get -o Dir::Etc::sourcelist="$OFFLINE_LIST" \
+sudo apt -o Dir::Etc::sourcelist="$OFFLINE_LIST" \
              -o Dir::Etc::sourceparts="$TEMP_PARTS" \
              -o APT::Get::List-Cleanup="0" \
              update -qq
@@ -413,7 +413,7 @@ printf '    • %s\n' $PKGS
 # ------------------------------------------------------------------------------
 # 4. Install them, again restricting APT to the offline repo only
 # ------------------------------------------------------------------------------
-sudo apt-get -y \
+sudo apt -y \
      -o Dir::Etc::sourcelist="$OFFLINE_LIST" \
      -o Dir::Etc::sourceparts="$TEMP_PARTS" \
      install $PKGS

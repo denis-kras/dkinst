@@ -67,10 +67,10 @@ check_service_running() {
 }
 
 # Update and upgrade system packages
-sudo apt-get update && sudo apt-get upgrade -y
+sudo apt update && sudo apt upgrade -y
 
 # Install necessary dependencies
-sudo apt-get install apt-transport-https openjdk-11-jdk wget -y
+sudo apt install apt-transport-https openjdk-11-jdk wget -y
 
 # Download and install the GPG signing key
 wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor | sudo tee /usr/share/keyrings/elasticsearch-keyring.gpg > /dev/null
@@ -79,10 +79,10 @@ wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor | 
 echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
 
 # Update package index
-sudo apt-get update
+sudo apt update
 
 # Install Elasticsearch
-sudo apt-get install elasticsearch -y
+sudo apt install elasticsearch -y
 
 # Path to the Elasticsearch configuration file
 CONFIG_FILE="/etc/elasticsearch/elasticsearch.yml"
@@ -164,7 +164,7 @@ if ! check_elasticsearch; then
 fi
 
 # Install Kibana
-sudo apt-get install kibana -y
+sudo apt install kibana -y
 
 # Start and enable Kibana service
 sudo systemctl start kibana

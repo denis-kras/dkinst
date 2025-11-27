@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.20.0 - 27.11.2025
+  * Added Chocolatey installer (Windows).
+  * Changed core method 'update' to 'upgrade'.
 * 0.19.0 - 24.11.2025
   * Added Total Commander installer (Windows).
 * 0.18.0 - 24.11.2025

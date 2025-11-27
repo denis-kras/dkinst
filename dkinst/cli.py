@@ -188,7 +188,7 @@ def _make_parser() -> argparse.ArgumentParser:
         "\n"
         "Arguments:\n"
         "  install <installer>          Install the script with the given name.\n"
-        "  update  <installer>          Update the script with the given name.\n"
+        "  upgrade  <installer>          Update the script with the given name.\n"
         "  uninstall <installer>        Uninstall the script with the given name.\n"
         "\n"
         "  manual <installer>           If manual method is available for specific installer, "
@@ -211,7 +211,7 @@ def _make_parser() -> argparse.ArgumentParser:
         "Examples:\n"
         "  dkinst help\n"
         "  dkinst install help\n"
-        "  dkinst update help\n"
+        "  dkinst upgrade help\n"
         "  dkinst uninstall help\n"
         "\n"
         "==============================\n"
@@ -263,7 +263,7 @@ def main() -> int:
     dkinst help
     dkinst available
     dkinst install <script>    [extra args passed through]
-    dkinst update  <script>    [extra args passed through]
+    dkinst upgrade  <script>    [extra args passed through]
     dkinst uninstall <script>  [extra args passed through]
     """
     parser: argparse.ArgumentParser = _make_parser()          # builds the ArgumentParser shown earlier
@@ -298,7 +298,7 @@ def main() -> int:
 
     # Methods from the Known Methods list
     if namespace.sub in _base.ALL_METHODS:
-        method: Literal["install", "uninstall", "update"] = namespace.sub
+        method: Literal["install", "uninstall", "upgrade"] = namespace.sub
 
         # No script provided OR explicitly asked for help
         if namespace.script is None or namespace.script == "help":
