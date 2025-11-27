@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.20.1 - 27.11.2025
+  * Fix in Chocolatey installer (Windows).
 * 0.20.0 - 27.11.2025
   * Added Chocolatey installer (Windows).
   * Changed core method 'update' to 'upgrade'.
