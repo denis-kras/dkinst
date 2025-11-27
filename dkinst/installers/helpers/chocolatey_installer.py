@@ -1,4 +1,5 @@
 import sys
+import os
 import argparse
 import shutil
 import subprocess
@@ -28,6 +29,19 @@ def is_choco_installed() -> bool:
     else:
         print("chocolatey is not installed.")
         return False
+
+
+def is_choco_folder_exists() -> bool:
+    """
+    Check if Chocolatey installation folder exists.
+    """
+    choco_path = r"C:\ProgramData\chocolatey"
+    exists = os.path.isdir(choco_path)
+    if exists:
+        print(f"Chocolatey installation folder exists at: {choco_path}")
+    else:
+        print("Chocolatey installation folder does not exist.")
+    return exists
 
 
 def get_choco_version_local() -> str | None:
@@ -101,14 +115,28 @@ def install_choco() -> int:
             "-Command", install_cmd,
         ],
         text=True,
+        # capture_output=True,  # capture stdout/stderr
     )
 
-    if completed.returncode == 0:
-        printc("Chocolatey installation script finished. Open a new shell and run `choco --version` to confirm.", color='green')
-        return 0
-    else:
-        printc(f"Chocolatey installer failed with exit code {completed.returncode}", color='red')
+    # Combine stdout + stderr for easier searching
+    # output = (completed.stdout or "") + (completed.stderr or "")
+
+    # Debug logging
+    # print("STDOUT:", completed.stdout)
+    # print("STDERR:", completed.stderr)
+
+    if completed.returncode != 0:
+        printc(f"Chocolatey installer failed with exit code {completed.returncode}", color="red")
+        # printc(output, color="red")
         return completed.returncode
+
+    # Status 0, but Chocolatey says it's already installed
+    # if "Installation will not continue." in output:
+    #     printc("The Chocolatey installer didn't run.", color="red")
+    #     return 1
+
+    printc("Chocolatey installation script finished. Open a new shell and run `choco --version` to confirm.", color='green')
+    return 0
 
 
 def upgrade_choco() -> int:
@@ -242,6 +270,10 @@ def main(
         if is_choco_installed() and not force:
             printc("Chocolatey is already installed. Use --force to reinstall.", color="yellow")
             return 0
+        if is_choco_folder_exists():
+            printc("Chocolatey installation folder already exists, but command 'choco' is not registered. The official installation script will not run. Try removing the folder and installing again.", color="red")
+            return 1
+
         rc: int = install_choco()
         if rc != 0:
             return rc
