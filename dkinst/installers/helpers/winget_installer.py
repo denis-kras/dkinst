@@ -3,6 +3,7 @@ import argparse
 import shutil
 import os
 import tempfile
+from pathlib import Path
 
 from rich.console import Console
 
@@ -15,12 +16,33 @@ from .infra.printing import printc
 console = Console()
 
 
-VERSION: str = "1.0.1"
-"""code cleaning"""
+VERSION: str = "1.0.2"
+"""added availability enforce for current process"""
 
 
 AKA_MS_GETWINGET_URL: str = "https://aka.ms/getwinget"
 APPX_PACKAGE_NAME: str = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
+
+
+def ensure_winget_available_in_this_process() -> None:
+    """Make sure `winget` is discoverable via PATH for the current Python process."""
+    # Only relevant on Windows
+    if system.get_platform() != "windows":
+        return
+
+    # If Python can already find it, we're done.
+    if shutil.which("winget"):
+        return
+
+    # Typical install location when WinGet comes from App Installer / Store
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    if not local_appdata:
+        return
+
+    candidate = Path(local_appdata) / "Microsoft" / "WindowsApps" / "winget.exe"
+    if candidate.is_file():
+        # Prepend its directory to PATH for *this process* and all its children
+        os.environ["PATH"] = f"{candidate.parent}{os.pathsep}{os.environ.get('PATH', '')}"
 
 
 def is_winget_installed() -> bool:

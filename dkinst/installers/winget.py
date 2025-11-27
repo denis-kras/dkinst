@@ -23,10 +23,13 @@ class PyCharm(_base.BaseInstaller):
             self,
             force: bool = False
     ):
-        return winget_installer.main(
-            install_ps_module=True,
-            force=force,
-        )
+        rc: int = winget_installer.main(install_ps_module=True, force=force)
+        if rc != 0:
+            return rc
+
+        winget_installer.ensure_winget_available_in_this_process()
+
+        return 0
 
     def _show_help(
             self,

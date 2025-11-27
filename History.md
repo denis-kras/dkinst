@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.22.1 - 27.11.2025
+  * Winget installer added availability enforcement.
 * 0.22.0 - 27.11.2025
   * Added dependencies check for the 'upgrade' method.
 * 0.21.0 - 27.11.2025
