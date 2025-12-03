@@ -16,11 +16,15 @@ from .infra.printing import printc
 console = Console()
 
 
-VERSION: str = "1.0.2"
-"""added availability enforce for current process"""
+VERSION: str = "1.0.3"
+"""fixes repair install errors output"""
 
 
 AKA_MS_GETWINGET_URL: str = "https://aka.ms/getwinget"
+
+GITHUB_USERNAME: str = "microsoft"
+GITHUB_REPO_NAME: str = "winget-cli"
+
 APPX_PACKAGE_NAME: str = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
 
 
@@ -59,12 +63,12 @@ def is_winget_installed() -> bool:
         return False
 
 
-def install_winget_and_dependencies_from_akams() -> int:
+def install_winget_from_akams() -> int:
     """
-    Install winget and its dependencies from "https://aka.ms/getwinget" with 'Add-AppxPackage'.
+    Install winget without its dependencies from "https://aka.ms/getwinget" with 'Add-AppxPackage'.
     """
 
-    console.print(f"Installing winget and its dependencies from {AKA_MS_GETWINGET_URL}...", style="cyan")
+    console.print(f"Installing winget from {AKA_MS_GETWINGET_URL}...", style="cyan")
     rc, stdout, stderr = appxs.add_appx_by_file(AKA_MS_GETWINGET_URL)
     if rc != 0:
         if "HRESULT: 0x80073D06, The package could not be installed because a higher version of this package is already installed" in stderr:
@@ -80,8 +84,8 @@ def install_winget_and_dependencies_from_akams() -> int:
 
 def install_dependencies_from_github() -> int:
     github_wrapper: githubw.GitHubWrapper = githubw.GitHubWrapper(
-        user_name="microsoft",
-        repo_name="winget-cli"
+        user_name=GITHUB_USERNAME,
+        repo_name=GITHUB_REPO_NAME
     )
 
     winget_temp_directory: str = tempfile.mkdtemp()
@@ -124,7 +128,7 @@ def install_winget_ps_module() -> int:
 
     console.print("Installing the NuGet PowerShell module and the Winget PowerShell module...", style="cyan")
 
-    # Install NuGet provider.
+    print("Installing NuGet provider...")
     command: str = "Install-PackageProvider -Name NuGet -Force"
     rc, stdout, stderr = powershells.run_command(command)
     if rc != 0:
@@ -132,7 +136,7 @@ def install_winget_ps_module() -> int:
         console.print(stderr, style="red")
         return rc
 
-    # Install Winget PowerShell module.
+    print("Installing Winget PowerShell module.")
     command = "Install-Module Microsoft.WinGet.Client -Force -Repository PSGallery"
     rc, stdout, stderr = powershells.run_command(command)
     if rc != 0:
@@ -140,13 +144,34 @@ def install_winget_ps_module() -> int:
         console.print(stderr, style="red")
         return rc
 
-    # Install Winget itself using the PowerShell module.
-    command = "Repair-WinGetPackageManager -AllUsers"
+    print("Installing/Repairing Winget binaries for all users using WinGet module...")
+    # command = "Repair-WinGetPackageManager -AllUsers"
+    command = "Repair-WinGetPackageManager -Force -Latest"
     rc, stdout, stderr = powershells.run_command(command)
+    retry_from_aka_ms: bool = False
     if rc != 0:
-        console.print("Failed to install/repair Winget using the PowerShell module.", style="red")
-        console.print(stderr, style="red")
-        return rc
+        if "WinGetIntegrityException" in stderr and "App Installer is not registered" in stderr:
+            console.print(
+                "App Installer is not registered, so Repair-WinGetPackageManager "
+                "cannot bootstrap winget on this machine.",
+                style="yellow",
+            )
+            retry_from_aka_ms = True
+        else:
+            console.print("Failed to install/repair Winget using the PowerShell module.", style="red")
+            console.print(stderr, style="red")
+            return rc
+
+    if retry_from_aka_ms:
+        console.print("Retrying installation from aka.ms and GitHub...", style="cyan")
+        print("Installing dependencies from GitHub...")
+        rc = install_dependencies_from_github()
+        if rc != 0:
+            return rc
+        print("Installing winget from aka.ms/getwinget...")
+        rc = install_winget_from_akams()
+        if rc != 0:
+            return rc
 
     return 0
 
@@ -196,12 +221,12 @@ def _make_parser():
     parser.add_argument(
         '-ia', '--install-aka-ms',
         action='store_true',
-        help=f"Install the latest version from: {AKA_MS_GETWINGET_URL}"
+        help=f"Install the latest version from: {AKA_MS_GETWINGET_URL}. Before that you need to install the dependencies."
     )
     parser.add_argument(
         '-ig', '--install-github',
         action='store_true',
-        help="Install the latest version from GitHub."
+        help="Install the latest version from GitHub. Before that you need to install the dependencies."
     )
     parser.add_argument(
         '-id', '--install-dependencies',
@@ -236,8 +261,8 @@ def main(
     The function will install/repair WinGet on Windows.
 
     :param install_ps_module: bool, If True, install the NuGet powershell module, winget ps module and winget itself.
-    :param install_aka_ms: bool, If True, install winget from aka.ms/getwinget.
-    :param install_github: bool, If True, install winget from GitHub.
+    :param install_aka_ms: bool, If True, install winget from aka.ms/getwinget. Before that you need to install the dependencies.
+    :param install_github: bool, If True, install winget from GitHub. Before that you need to install the dependencies.
     :param force: bool, If True, force installation even if winget is already installed.
     :param install_dependencies: bool, If True, install winget dependencies from GitHub.
     :param register: bool, If True, register the 'WinGet' package if the command is still not recognized after first login.
@@ -263,7 +288,7 @@ def main(
         if rc != 0:
             return rc
     if install_aka_ms:
-        rc: int = install_winget_and_dependencies_from_akams()
+        rc: int = install_winget_from_akams()
         if rc != 0:
             return rc
     if install_github:

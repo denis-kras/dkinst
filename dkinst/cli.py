@@ -100,6 +100,12 @@ def _run_dependencies(
     done = done or set()
     stack = stack or []
 
+    # When resolving dependencies for an 'upgrade', we only need to ensure
+    # they are installed. Dependencies should always use their 'install'
+    # method, even if they implement 'upgrade'.
+    if method == "upgrade":
+        method = "install"
+
     deps = getattr(installer, "dependencies", []) or []
     for dep in deps:
         # Accept either a name ("brew") or an installer instance/class with .name

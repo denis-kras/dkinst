@@ -25,9 +25,18 @@ class PyCharm(_base.BaseInstaller):
     ):
         rc: int = winget_installer.main(install_ps_module=True, force=force)
         if rc != 0:
+            console.print('=============================', style='red')
+            console.print("Try other installation methods with: dkinst manual winget", style='yellow')
             return rc
 
         winget_installer.ensure_winget_available_in_this_process()
+
+        # Check if winget is available now
+        if not winget_installer.is_winget_installed():
+            console.print("Winget is not installed, could be it is not supported by your version of Windows.", style='red')
+            return 1
+        else:
+            console.print("Winget installer installed successfully", style='green')
 
         return 0
 

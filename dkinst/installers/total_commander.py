@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Literal
 
 from . import _base
-from .helpers.infra import wingets
-from .helpers.infra.printing import printc
+from .helpers.infra import winget_fallback_choco
 
 
 WINGET_PACKAGE_ID: str = "Ghisler.TotalCommander"
+CHOCO_PACKAGE: str = "totalcommander"
 
 
 class TotalCommander(_base.BaseInstaller):
@@ -14,7 +14,8 @@ class TotalCommander(_base.BaseInstaller):
         super().__init__()
         self.name: str = Path(__file__).stem
         self.description: str = "TotalCommander for Windows"
-        self.version: str = "1.0.0"
+        self.version: str = "1.0.2"
+        # Using winget as main and choco as fallback.
         self.platforms: list = ["windows"]
 
         self.dependencies: list[str] = ['winget']
@@ -22,17 +23,29 @@ class TotalCommander(_base.BaseInstaller):
     def install(
             self,
     ):
-        return install_function()
+        return winget_fallback_choco.method_package(
+            method="install",
+            winget_package_id=WINGET_PACKAGE_ID,
+            choco_package_name=CHOCO_PACKAGE
+        )
 
     def upgrade(
             self,
     ):
-        return upgrade_function()
+        return winget_fallback_choco.method_package(
+            method="upgrade",
+            winget_package_id=WINGET_PACKAGE_ID,
+            choco_package_name=CHOCO_PACKAGE
+        )
 
     def uninstall(
             self,
     ):
-        return uninstall_function()
+        return winget_fallback_choco.method_package(
+            method="upgrade",
+            winget_package_id=WINGET_PACKAGE_ID,
+            choco_package_name=CHOCO_PACKAGE
+        )
 
     def _show_help(
             self,
@@ -40,39 +53,12 @@ class TotalCommander(_base.BaseInstaller):
     ) -> None:
         if method == "install":
             method_help: str = (
-                "This method uses WinGet to install Ghisler.TotalCommander.\n"
+                "This method uses Winget or falls back to Chocolatey to install TotalCommander.\n"
             )
             print(method_help)
         elif method == "upgrade":
-            print("Uses WinGet to upgrade Ghisler.TotalCommander.")
+            print("Uses Winget or falls back to Chocolatey to upgrade TotalCommander.")
         elif method == "uninstall":
-            print("Uses WinGet to uninstall Ghisler.TotalCommander.")
+            print("Uses Winget or falls back to Chocolatey to uninstall TotalCommander.")
         else:
             raise ValueError(f"Unknown method '{method}'.")
-
-
-def install_function() -> int:
-    rc: int = wingets.install_package(WINGET_PACKAGE_ID)
-    if rc != 0:
-        printc("Failed to install TotalCommander.", color="red")
-        return rc
-
-    return 0
-
-
-def upgrade_function() -> int:
-    rc: int = wingets.upgrade_package(WINGET_PACKAGE_ID)
-    if rc != 0:
-        printc("Failed to upgrade TotalCommander.", color="red")
-        return rc
-
-    return 0
-
-
-def uninstall_function() -> int:
-    rc: int = wingets.uninstall_package(WINGET_PACKAGE_ID)
-    if rc != 0:
-        printc("Failed to uninstall TotalCommander.", color="red")
-        return rc
-
-    return 0

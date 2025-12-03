@@ -6,8 +6,8 @@ from rich.console import Console
 console = Console()
 
 
-def _run_winget(cmd: list[str], action: str) -> int:
-    """Run a winget command and handle output and errors nicely."""
+def _run_choco(cmd: list[str], action: str) -> int:
+    """Run a choco command and handle output and errors nicely."""
     try:
         result = subprocess.run(
             cmd,
@@ -15,7 +15,7 @@ def _run_winget(cmd: list[str], action: str) -> int:
             text=True,
         )
     except FileNotFoundError:
-        console.print("[red]winget was not found on PATH. Is it installed?[/red]")
+        console.print("[red]choco was not found on PATH. Is Chocolatey installed?[/red]")
         return 1
 
     if result.returncode != 0:
@@ -24,7 +24,6 @@ def _run_winget(cmd: list[str], action: str) -> int:
         if result.stderr:
             console.print(result.stderr)
         elif result.stdout:
-            # Sometimes tools only write errors to stdout
             console.print(result.stdout)
 
         return result.returncode
@@ -34,46 +33,45 @@ def _run_winget(cmd: list[str], action: str) -> int:
 
 
 def install_package(package_id: str) -> int:
-    console.print(f"[blue]Installing WinGet package ID: {package_id}[/blue]")
+    console.print(f"[blue]Installing Chocolatey package: {package_id}[/blue]")
 
-    return _run_winget(
+    return _run_choco(
         [
-            "winget",
+            "choco",
             "install",
-            f"--id={package_id}",
-            "-e",
-            "--accept-source-agreements",
-            "--accept-package-agreements",
+            package_id,
+            "-y",            # accept all prompts
+            # "--no-progress", # cleaner output (esp. in CI)
         ],
         action="Installation",
     )
 
 
 def upgrade_package(package_id: str) -> int:
-    console.print(f"[blue]Upgrading WinGet package ID: {package_id}[/blue]")
+    console.print(f"[blue]Upgrading Chocolatey package: {package_id}[/blue]")
 
-    return _run_winget(
+    return _run_choco(
         [
-            "winget",
+            "choco",
             "upgrade",
-            f"--id={package_id}",
-            "-e",
-            "--accept-source-agreements",
-            "--accept-package-agreements",
+            package_id,
+            "-y",
+            # "--no-progress",
         ],
         action="Upgrade",
     )
 
 
 def uninstall_package(package_id: str) -> int:
-    console.print(f"[blue]Uninstalling WinGet package ID: {package_id}[/blue]")
+    console.print(f"[blue]Uninstalling Chocolatey package: {package_id}[/blue]")
 
-    return _run_winget(
+    return _run_choco(
         [
-            "winget",
+            "choco",
             "uninstall",
-            f"--id={package_id}",
-            "-e",
+            package_id,
+            "-y",
+            # "--no-progress",
         ],
         action="Uninstallation",
     )

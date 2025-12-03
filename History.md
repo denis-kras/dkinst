@@ -1,6 +1,17 @@
 <!-- HISTORY -->
 ## History
 
+* 0.23.2 - 03.12.2025
+  * Fixed Chocolatey installer.
+  * Added Winget fallback to Chocolatey wrapper.
+* 0.23.1 - 03.12.2025
+  * Fixed dependency installation for the 'upgrade' methods.
+* 0.23.0 - 03.12.2025
+  * Fixed aggregated error output in powershell wrapper.
+  * Fixed missing parts in winget installation.
+  * Added choco wrapper.
+  * Some winget wrapper improvements.
+  * Total Commander moved to Chocolatey installer.
 * 0.22.1 - 27.11.2025
   * Winget installer added availability enforcement.
 * 0.22.0 - 27.11.2025

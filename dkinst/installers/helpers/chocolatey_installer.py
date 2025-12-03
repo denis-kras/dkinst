@@ -106,7 +106,17 @@ def install_choco() -> int:
         "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
     )
 
-    completed = subprocess.run(
+    # Markers we care about (lowercased)
+    reboot_markers = [
+        "but a reboot is required",
+        "a reboot is required before using chocolatey cli",
+        "you need to restart this machine prior to using choco",
+    ]
+
+    needs_reboot = False
+
+    # Start process and stream output
+    proc = subprocess.Popen(
         [
             "powershell",
             "-NoProfile",
@@ -114,28 +124,45 @@ def install_choco() -> int:
             "-ExecutionPolicy", "Bypass",
             "-Command", install_cmd,
         ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
-        # capture_output=True,  # capture stdout/stderr
+        bufsize=1,  # line-buffered
     )
 
-    # Combine stdout + stderr for easier searching
-    # output = (completed.stdout or "") + (completed.stderr or "")
+    # Read output line by line, print immediately, and check for markers
+    if proc.stdout is not None:
+        for line in proc.stdout:
+            print(line, end="")  # stream to console as-is
+            l = line.lower()
+            if any(marker in l for marker in reboot_markers):
+                needs_reboot = True
 
-    # Debug logging
-    # print("STDOUT:", completed.stdout)
-    # print("STDERR:", completed.stderr)
+    proc.wait()
 
-    if completed.returncode != 0:
-        printc(f"Chocolatey installer failed with exit code {completed.returncode}", color="red")
-        # printc(output, color="red")
-        return completed.returncode
+    if proc.returncode != 0:
+        printc(
+            f"Chocolatey installer failed with exit code {proc.returncode}",
+            color="red",
+        )
+        return proc.returncode
 
-    # Status 0, but Chocolatey says it's already installed
-    # if "Installation will not continue." in output:
-    #     printc("The Chocolatey installer didn't run.", color="red")
-    #     return 1
+    if needs_reboot:
+        printc(
+            "Chocolatey installation completed, but "
+            "a reboot is required before you can use choco.\n"
+            "Please restart this machine."
+            "If it was part of dependency installation, run the installer again after reboot.",
+            color="yellow",
+        )
+        # return a special reboot-required code
+        return 3010
 
-    printc("Chocolatey installation script finished. Open a new shell and run `choco --version` to confirm.", color='green')
+    printc(
+        "Chocolatey installation script finished. "
+        "Open a new shell and run `choco --version` to confirm.",
+        color="green",
+    )
     return 0
 
 

@@ -30,7 +30,15 @@ def run_command(
         "$ErrorActionPreference='Stop';"
         "$ProgressPreference='SilentlyContinue';"
         f"try {{ {command} }} "
-        "catch { Write-Error $_; exit 1 }"
+        "catch { "
+        "  $_ | Format-List * -Force | Out-String | Write-Error; "
+        "  if ($_.Exception.InnerExceptions) { "
+        "    $_.Exception.InnerExceptions | Format-List * -Force | Out-String | Write-Error "
+        "  } elseif ($_.Exception.InnerException) { "
+        "    $_.Exception.InnerException | Format-List * -Force | Out-String | Write-Error "
+        "  } "
+        "  exit 1 "
+        "}"
     )
 
     proc = subprocess.run(
