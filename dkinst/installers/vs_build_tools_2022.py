@@ -21,6 +21,9 @@ class VLC(_base.BaseInstaller):
     ):
         return vs_build_tools_installer.main(install=True, force=force)
 
+    def is_installed(self) -> bool:
+        return vs_build_tools_installer.is_msvc_installed()
+
     def _show_help(
             self,
             method: Literal["install", "uninstall", "upgrade"]

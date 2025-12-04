@@ -40,6 +40,9 @@ class PyCharm(_base.BaseInstaller):
 
         return 0
 
+    def is_installed(self) -> bool:
+        return winget_installer.is_winget_installed()
+
     def _show_help(
             self,
             method: Literal["install", "uninstall", "upgrade"]

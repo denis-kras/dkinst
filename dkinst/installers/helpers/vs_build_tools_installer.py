@@ -20,7 +20,7 @@ VSWHERE_EXE: Path = Path(
 ) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
 
 
-def is_msvc_installed():
+def is_msvc_installed() -> bool:
     if not VSWHERE_EXE.exists():
         return False
 

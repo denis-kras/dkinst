@@ -33,6 +33,9 @@ class TesseractOCR(_base.BaseInstaller):
     ):
         return self.install(force=force)
 
+    def is_installed(self) -> bool:
+        return os.path.isfile(self.exe_path)
+
     def _show_help(
             self,
             method: Literal["install", "uninstall", "upgrade"]

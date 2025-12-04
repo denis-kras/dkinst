@@ -6,6 +6,7 @@ from rich.console import Console
 
 from . import _base
 from .helpers import nodejs_installer
+from .helpers.infra import system
 
 
 console = Console()
@@ -28,6 +29,15 @@ class NodeJS(_base.BaseInstaller):
             latest=True,
             force=force
         )
+
+    def is_installed(self) -> bool:
+        current_platform = system.get_platform()
+        if current_platform == "debian":
+            return nodejs_installer.is_nodejs_installed_ubuntu()
+        elif current_platform == "windows":
+            return nodejs_installer.is_nodejs_installed_win()
+        else:
+            return False
 
     def _show_help(
             self,

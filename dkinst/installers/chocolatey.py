@@ -30,6 +30,9 @@ class Chocolatey(_base.BaseInstaller):
     ):
         return chocolatey_installer.main(upgrade=True)
 
+    def is_installed(self) -> bool:
+        return chocolatey_installer.is_choco_installed()
+
     def _show_help(
             self,
             method: Literal["install", "uninstall", "upgrade"]

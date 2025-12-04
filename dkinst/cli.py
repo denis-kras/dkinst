@@ -138,6 +138,16 @@ def _run_dependencies(
             )
             return 1, done
 
+        # If the dependency is already installed, skip its installation (and its own deps)
+        if dep_inst.is_installed():
+            console.print(
+                f"Dependency [{dep_name}] is already installed. Skipping.",
+                style="cyan",
+                markup=False,
+            )
+            done.add(dep_name)
+            continue
+
         # Decide which method to run on the dependency:
         #  - Prefer the same 'method' as the main command, if supported.
         #  - Otherwise fall back to 'install' (to ensure the dep is present).

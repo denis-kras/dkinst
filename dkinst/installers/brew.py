@@ -1,5 +1,5 @@
 from pathlib import Path
-from types import ModuleType
+import shutil
 from typing import Literal
 import os
 import subprocess
@@ -18,15 +18,18 @@ class Brew(_base.BaseInstaller):
         super().__init__()
         self.name: str = Path(__file__).stem
         self.description: str = "Brew Installer"
-        self.version: str = "1.0.0"
+        self.version: str = "1.0.1"
+        # Added is_installed.
         self.platforms: list = ["debian"]
-        self.helper: ModuleType | None = None
 
     def install(
             self,
             force: bool = False
     ):
         return install_brew()
+
+    def is_installed(self) -> bool:
+        return shutil.which("brew") is not None
 
     def _show_help(
             self,

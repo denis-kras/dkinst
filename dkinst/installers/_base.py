@@ -51,6 +51,14 @@ class BaseInstaller:
     def upgrade(self):
         raise NotImplementedError("Method not implemented by the subclass. Upgrade manually.")
 
+    def is_installed(self) -> bool:
+        """
+        Check if the application is installed.
+
+        :return: True if installed, False otherwise.
+        """
+        raise NotImplementedError("Subclasses should implement this method.")
+
     @staticmethod
     def _show_help(
             method: Literal["install", "uninstall", "upgrade"]
