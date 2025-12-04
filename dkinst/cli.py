@@ -8,10 +8,13 @@ import subprocess
 import os
 import shutil
 from typing import Literal
+import shlex
 
 from rich.console import Console
 from rich.table import Table
 import argcomplete
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import Completer, Completion
 
 from . import __version__
 from .installers._base import BaseInstaller
@@ -19,10 +22,48 @@ from .installers import _base
 from . import installers
 from .installers.helpers.infra import system, permissions, prereqs, prereqs_uninstall
 
+
 console = Console()
 
 
 VERSION: str = __version__
+
+
+class DkinstCompleter(Completer):
+    def __init__(self, subcommands: list[str], installer_names: list[str]):
+        self.subcommands = subcommands
+        self.installer_names = installer_names
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+
+        stripped = text.strip()
+        if not stripped:
+            token_index = 0
+            prefix = ""
+            first_word = ""
+        else:
+            parts = stripped.split()
+            if text.endswith(" "):
+                token_index = len(parts)
+                prefix = ""
+            else:
+                token_index = len(parts) - 1
+                prefix = parts[-1]
+            first_word = parts[0] if parts else ""
+
+        candidates: list[str] = []
+
+        if token_index == 0:
+            # Completing the first word: choose from subcommands
+            candidates = [cmd for cmd in self.subcommands if cmd.startswith(prefix)]
+        elif token_index == 1 and first_word in _base.ALL_METHODS:
+            # Completing the second word: installer names for install/upgrade/uninstall/manual
+            candidates = [name for name in self.installer_names if name.startswith(prefix)]
+
+        for cand in candidates:
+            # Replace just the current word (prefix) with the full candidate
+            yield Completion(cand, start_position=-len(prefix))
 
 
 def _installer_name_completer(prefix, parsed_args, **kwargs):
@@ -256,6 +297,232 @@ def _require_admin_if_needed(
     return 1
 
 
+def _get_subcommands_from_parser(parser: argparse.ArgumentParser) -> list[str]:
+    """
+    Return the list of top-level subcommand names from an argparse parser.
+    """
+    for action in parser._actions:
+        # _SubParsersAction is the thing created by add_subparsers()
+        if isinstance(action, argparse._SubParsersAction):
+            return list(action.choices.keys())
+    return []
+
+
+def _interactive_console(parser: argparse.ArgumentParser) -> int:
+    installers_list = _get_installers()
+    installer_names = [i.name for i in installers_list]
+
+    # Dynamically grab all subcommand names from the parser
+    subcommands: list[str] = _get_subcommands_from_parser(parser)
+
+    console.print(
+        f"[bold cyan]dkinst v{VERSION}[/bold cyan]\n"
+        "[bold green]Entering dkinst interactive console.[/bold green]\n"
+        "Type 'help' to see top-level usage, or 'exit' / 'quit' to leave.\n"
+    )
+
+    if PromptSession is not None:
+        session = PromptSession(
+            completer=DkinstCompleter(subcommands, installer_names),
+            complete_while_typing=False,  # or True if you like
+        )
+
+        while True:
+            try:
+                # Note: prompt_toolkit handles TAB completion here
+                line = session.prompt("dkinst> ")
+            except (EOFError, KeyboardInterrupt):
+                console.print()
+                break
+
+            line = line.strip()
+            if not line:
+                continue
+
+            if line in {"exit", "quit"}:
+                break
+
+            try:
+                argv = shlex.split(line)
+            except ValueError as e:
+                console.print(f"[red]Parse error:[/red] {e}")
+                continue
+
+            try:
+                namespace = parser.parse_args(argv)
+            except SystemExit:
+                continue
+
+            _dispatch(namespace, parser)
+    else:
+        # Fallback: no prompt_toolkit installed, just a plain prompt
+        console.print(
+            "[yellow]prompt_toolkit not installed; TAB completion is disabled.[/yellow]"
+        )
+        while True:
+            try:
+                line = console.input("[bold magenta]dkinst> [/bold magenta]").strip()
+            except (EOFError, KeyboardInterrupt):
+                console.print()
+                break
+
+            if not line:
+                continue
+
+            if line in {"exit", "quit"}:
+                break
+
+            try:
+                argv = shlex.split(line)
+            except ValueError as e:
+                console.print(f"[red]Parse error:[/red] {e}")
+                continue
+
+            try:
+                namespace = parser.parse_args(argv)
+            except SystemExit:
+                continue
+
+            _dispatch(namespace, parser)
+
+    console.print("[bold]Bye![/bold]")
+    return 0
+
+
+def _dispatch(
+        namespace: argparse.Namespace,
+        parser: argparse.ArgumentParser
+) -> int:
+    if namespace.sub == "help":
+        parser.print_help()
+        return 0
+
+    if namespace.sub == "available":
+        cmd_available()
+        return 0
+
+    if namespace.sub == "edit-config":
+        config_path: str = str(Path(__file__).parent / "config.toml")
+        subprocess.run(["notepad", config_path])
+        return 0
+
+    if namespace.sub == "prereqs":
+        return prereqs._cmd_prereqs()
+
+    if namespace.sub == "prereqs-uninstall":
+        return prereqs_uninstall._cmd_uninstall_prereqs()
+
+    # Methods from the Known Methods list
+    if namespace.sub in _base.ALL_METHODS:
+        method: Literal["install", "uninstall", "upgrade"] = namespace.sub
+
+        # No script provided OR explicitly asked for help
+        if namespace.script is None or namespace.script == "help":
+            BaseInstaller._show_help(method)
+            return 0
+
+        # From here on, a specific installer was provided
+        installer_name: str = namespace.script
+        extras: list = namespace.installer_args or []
+
+        # Build a single map of installer instances so dependency resolution
+        # uses the same instances.
+        installers_list: list = _get_installers()
+        installers_map: dict = {i.name: i for i in installers_list}
+
+        for inst in installers_list:
+            # Find the provided installer.
+            if inst.name != installer_name:
+                continue
+
+            inst._platforms_known()
+
+            # Now check if the current platform is supported by this installer.
+            current_platform = system.get_platform()
+            if current_platform not in inst.platforms:
+                console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].",
+                              style='red', markup=False)
+                return 1
+
+            # Enforce admin privileges for this method when requested, unless the user is just asking for help.
+            if 'help' not in extras:
+                rc = _require_admin_if_needed(inst, method)
+                if rc != 0:
+                    return rc
+
+            # Processing the 'manual' method.
+            if method == 'manual':
+                installer_methods = _base.get_known_methods(inst)
+                if 'manual' not in installer_methods:
+                    console.print(f"No 'manual' method available for the installer: [{inst.name}]", style='red',
+                                  markup=False)
+                    return 1
+
+                # Use the helper parser for this installer, if available
+                helper_parser = _base._get_helper_parser(inst, installer_methods)
+                if helper_parser is None:
+                    console.print(f"No manual argparser available for [{inst.name}].", style='red', markup=False)
+                    return 1
+
+                # Change the command line program name to include the installer name.
+                helper_parser.prog = f"{helper_parser.prog} {method} {inst.name}"
+
+                # Output help of specific installer helper parser
+                if (
+                        # Installer-specific help: [dkinst <method> <installer> help]
+                        len(extras) == 1 and extras[0] == "help"
+                ) or (
+                        # Manual installer execution without arguments: dkinst manual <installer>
+                        # show helper parser help if available.
+                        len(extras) == 0
+                ):
+                    helper_parser.print_help()
+                    return 0
+
+                # Regular arguments execution of the manual method.
+                # Parse just the extras, not the whole argv
+                try:
+                    parsed = helper_parser.parse_args(extras)
+                except SystemExit:
+                    # argparse already printed usage/error; treat as handled
+                    return 2
+                # If your installers accept kwargs:
+                target_helper = inst.helper
+                return target_helper.main(**vars(parsed))
+
+            # For all the other methods that aren't manual.
+            if len(extras) == 1 and extras[0] == "help":
+                inst._show_help(method)
+                return 0
+
+            # For 'install' and 'upgrade', resolve dependencies first
+            if method in ("install", "upgrade"):
+                rc, all_dependencies = _run_dependencies(inst, installers_map, method=method)
+                if rc != 0:
+                    return rc
+
+                if all_dependencies:
+                    console.print(
+                        f"All dependencies for [{inst.name}] are installed. Proceeding to main installer…",
+                        style="cyan",
+                        markup=False,
+                    )
+
+            # Normal execution: call method and pass through extras (if any)
+            target = getattr(inst, method)
+
+            if extras:
+                return target(*extras)
+            else:
+                return target()
+
+        console.print(f"No installer found with the name: [{installer_name}]", style='red', markup=False)
+        return 0
+
+    # should never get here: argparse enforces valid sub-commands
+    parser.error(f"Unknown command {namespace.sub!r}")
+
+
 def _make_parser() -> argparse.ArgumentParser:
     description: str = (
         "Den K Simple Installer\n"
@@ -329,7 +596,7 @@ def _make_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """
     Entrypoint for the `dkinst` CLI.
 
@@ -343,141 +610,16 @@ def main() -> int:
     """
     parser: argparse.ArgumentParser = _make_parser()          # builds the ArgumentParser shown earlier
 
-    # If no arguments, show the top-level help and exit successfully
-    passed_arguments = sys.argv[1:]
-    if not passed_arguments:
-        parser.print_help()
-        return 0
+    if argv is None:
+        argv = sys.argv[1:]
 
-    namespace = parser.parse_args()         # plain parsing now
+        # If no arguments, enter interactive console instead of printing help
+    if not argv:
+        return _interactive_console(parser)
 
-    if namespace.sub == "help":
-        parser.print_help()
-        return 0
-
-    if namespace.sub == "available":
-        cmd_available()
-        return 0
-
-    if namespace.sub == "edit-config":
-        config_path: str = str(Path(__file__).parent / "config.toml")
-        subprocess.run(["notepad", config_path])
-        return 0
-
-    if namespace.sub == "prereqs":
-        return prereqs._cmd_prereqs()
-
-
-    if namespace.sub == "prereqs-uninstall":
-        return prereqs_uninstall._cmd_uninstall_prereqs()
-
-    # Methods from the Known Methods list
-    if namespace.sub in _base.ALL_METHODS:
-        method: Literal["install", "uninstall", "upgrade"] = namespace.sub
-
-        # No script provided OR explicitly asked for help
-        if namespace.script is None or namespace.script == "help":
-            BaseInstaller._show_help(method)
-            return 0
-
-        # From here on, a specific installer was provided
-        installer_name: str = namespace.script
-        extras: list = namespace.installer_args or []
-
-        # Build a single map of installer instances so dependency resolution
-        # uses the same instances.
-        installers_list: list = _get_installers()
-        installers_map: dict = {i.name: i for i in installers_list}
-
-        for inst in installers_list:
-            # Find the provided installer.
-            if inst.name != installer_name:
-                continue
-
-            inst._platforms_known()
-
-            # Now check if the current platform is supported by this installer.
-            current_platform = system.get_platform()
-            if current_platform not in inst.platforms:
-                console.print(f"This installer [{inst.name}] does not support your platform [{current_platform}].", style='red', markup=False)
-                return 1
-
-            # Enforce admin privileges for this method when requested, unless the user is just asking for help.
-            if 'help' not in extras:
-                rc = _require_admin_if_needed(inst, method)
-                if rc != 0:
-                    return rc
-
-            # Processing the 'manual' method.
-            if method == 'manual':
-                installer_methods = _base.get_known_methods(inst)
-                if 'manual' not in installer_methods:
-                    console.print(f"No 'manual' method available for the installer: [{inst.name}]", style='red', markup=False)
-                    return 1
-
-                # Use the helper parser for this installer, if available
-                helper_parser = _base._get_helper_parser(inst, installer_methods)
-                if helper_parser is None:
-                    console.print(f"No manual argparser available for [{inst.name}].", style='red', markup=False)
-                    return 1
-
-                # Change the command line program name to include the installer name.
-                helper_parser.prog = f"{helper_parser.prog} {method} {inst.name}"
-
-                # Output help of specific installer helper parser
-                if (
-                        # Installer-specific help: [dkinst <method> <installer> help]
-                        len(extras) == 1 and extras[0] == "help"
-                ) or (
-                        # Manual installer execution without arguments: dkinst manual <installer>
-                        # show helper parser help if available.
-                        len(extras) == 0
-                ):
-                    helper_parser.print_help()
-                    return 0
-
-                # Regular arguments execution of the manual method.
-                # Parse just the extras, not the whole argv
-                try:
-                    parsed = helper_parser.parse_args(extras)
-                except SystemExit:
-                    # argparse already printed usage/error; treat as handled
-                    return 2
-                # If your installers accept kwargs:
-                target_helper = inst.helper
-                return target_helper.main(**vars(parsed))
-
-            # For all the other methods that aren't manual.
-            if len(extras) == 1 and extras[0] == "help":
-                inst._show_help(method)
-                return 0
-
-            # For 'install' and 'upgrade', resolve dependencies first
-            if method in ("install", "upgrade"):
-                rc, all_dependencies = _run_dependencies(inst, installers_map, method=method)
-                if rc != 0:
-                    return rc
-
-                if all_dependencies:
-                    console.print(
-                        f"All dependencies for [{inst.name}] are installed. Proceeding to main installer…",
-                        style="cyan",
-                        markup=False,
-                    )
-
-            # Normal execution: call method and pass through extras (if any)
-            target = getattr(inst, method)
-
-            if extras:
-                return target(*extras)
-            else:
-                return target()
-
-        console.print(f"No installer found with the name: [{installer_name}]", style='red', markup=False)
-        return 0
-
-    # should never get here: argparse enforces valid sub-commands
-    parser.error(f"Unknown command {namespace.sub!r}")
+    # Normal one-shot CLI mode
+    namespace = parser.parse_args(argv)
+    return _dispatch(namespace, parser)
 
 
 if __name__ == "__main__":

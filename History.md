@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.27.0 - 04.12.2025
+  * Added interactive console mode with autocomplete.
 * 0.26.0 - 04.12.2025
   * Each dependency now has its own 'is_installed()' method.
 * 0.25.0 - 04.12.2025
