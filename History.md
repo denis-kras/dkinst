@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.25.0 - 04.12.2025
+  * Added Notepad++ installer (Windows).
 * 0.24.0 - 04.12.2025
   * Added qBittorrent installer (Windows).
 * 0.23.2 - 03.12.2025
