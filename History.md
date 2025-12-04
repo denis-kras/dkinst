@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.28.0 - 04.12.2025
+  * Added main version output.
 * 0.27.0 - 04.12.2025
   * Added interactive console mode with autocomplete.
 * 0.26.0 - 04.12.2025

@@ -567,6 +567,15 @@ def _make_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False
     )
+
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=VERSION,  # prints only the version string, e.g. "1.2.3"
+        help="Show the dkinst version and exit.",
+    )
+
     sub = parser.add_subparsers(dest="sub", required=False)
 
     for subcmd in _base.ALL_METHODS:
