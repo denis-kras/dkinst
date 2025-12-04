@@ -29,6 +29,32 @@ console = Console()
 VERSION: str = __version__
 
 
+# Short aliases for top-level commands
+COMMAND_ALIASES: dict[str, str] = {
+    "i": "install",
+    "up": "upgrade",
+    "un": "uninstall",
+    "m": "manual",
+    "a": "available",
+    "h": "help",
+}
+
+
+def _normalize_argv(argv: list[str]) -> list[str]:
+    """
+    Map short aliases (i, up, un, a) to their full subcommand names.
+
+    Examples:
+      dkinst i foo        -> dkinst install foo
+      dkinst up foo       -> dkinst upgrade foo
+      dkinst un foo       -> dkinst uninstall foo
+      dkinst a            -> dkinst available
+    """
+    if argv and argv[0] in COMMAND_ALIASES:
+        argv = [COMMAND_ALIASES[argv[0]]] + argv[1:]
+    return argv
+
+
 class DkinstCompleter(Completer):
     def __init__(self, subcommands: list[str], installer_names: list[str]):
         self.subcommands = subcommands
@@ -318,7 +344,7 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
     console.print(
         f"[bold cyan]dkinst v{VERSION}[/bold cyan]\n"
         "[bold green]Entering dkinst interactive console.[/bold green]\n"
-        "Type 'help' to see top-level usage, or 'exit' / 'quit' to leave.\n"
+        "Type 'help' to see top-level usage, or 'exit' / 'quit' / Ctrl+C to leave.\n"
     )
 
     if PromptSession is not None:
@@ -347,6 +373,8 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
             except ValueError as e:
                 console.print(f"[red]Parse error:[/red] {e}")
                 continue
+
+            argv = _normalize_argv(argv)
 
             try:
                 namespace = parser.parse_args(argv)
@@ -377,6 +405,8 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
             except ValueError as e:
                 console.print(f"[red]Parse error:[/red] {e}")
                 continue
+
+            argv = _normalize_argv(argv)
 
             try:
                 namespace = parser.parse_args(argv)
@@ -530,15 +560,20 @@ def _make_parser() -> argparse.ArgumentParser:
         "\n"
         "Arguments:\n"
         "  install <installer>          Install the script with the given name.\n"
-        "  upgrade  <installer>          Update the script with the given name.\n"
+        "       i <installer>           (alias for install)\n"
+        "  upgrade  <installer>         Update the script with the given name.\n"
+        "       up <installer>          (alias for upgrade)\n"
         "  uninstall <installer>        Uninstall the script with the given name.\n"
+        "       un <installer>         (alias for uninstall)\n"
         "\n"
         "  manual <installer>           If manual method is available for specific installer, "
         "                               you can use it to execute the helper script with its parameters.\n"
         "  manual <installer> <args>    Execute the helper script with its parameters.\n"
         "  manual <installer> help      Show help for manual arguments of the helper script.\n"
+        "       m <installer>            (alias for manual)\n"
         "\n"
         "  available                    List all available installers.\n"
+        "       a                       (alias for available)\n"
         "  edit-config                  Open the configuration file in the default editor.\n"
         "                               You can change the base installation path here.\n"
         "  prereqs                      Install prerequisites for dkinst. Run this after installing or updating dkinst.\n"
@@ -548,6 +583,7 @@ def _make_parser() -> argparse.ArgumentParser:
         "                               Currently uses argcomplete's global activation method: register-python-argcomplete\n"
         "  prereqs-uninstall            Uninstall prerequisites for dkinst, removing tab-completion support.\n"
         "  help                         Show this help message.\n"
+        "       h                       (alias for help)\n"
         "\n"
         "You can use help for any sub-command to see its specific usage.\n"
         "Examples:\n"
@@ -625,6 +661,9 @@ def main(argv: list[str] | None = None) -> int:
         # If no arguments, enter interactive console instead of printing help
     if not argv:
         return _interactive_console(parser)
+
+    # Map short aliases to the full subcommand before argparse sees them
+    argv = _normalize_argv(argv)
 
     # Normal one-shot CLI mode
     namespace = parser.parse_args(argv)
