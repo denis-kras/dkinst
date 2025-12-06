@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.29.1 - 06.12.2025
+  * Fixed robocorp installer.
 * 0.29.0 - 04.12.2025
   * Added shorter method aliases.
 * 0.28.0 - 04.12.2025

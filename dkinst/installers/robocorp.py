@@ -15,7 +15,8 @@ class Robocorp(_base.BaseInstaller):
         super().__init__()
         self.name: str = Path(__file__).stem
         self.description: str = "Robocorp Installer"
-        self.version: str = "1.0.2"
+        self.version: str = "1.0.3"
+        # Added pyautogui
         self.platforms: list = ["windows"]
 
         self.dependencies: list[str] = ['tesseract_ocr', 'nodejs']
@@ -41,7 +42,7 @@ class Robocorp(_base.BaseInstaller):
         # subprocess.check_call(["playwright", "install"])
 
         console.print("Installing Additional modules.", style="blue")
-        subprocess.check_call(["pip", "install", "--upgrade", "matplotlib", "imagehash", "pynput"])
+        subprocess.check_call(["pip", "install", "--upgrade", "matplotlib", "imagehash", "pynput", "pyautogui"])
 
         # Patch robocorp: Remove mouse to the center of the screen on control command.
         # Import the library to find its path.
