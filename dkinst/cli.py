@@ -157,9 +157,14 @@ def _run_dependencies(
     stack: list[str] | None = None,
 ) -> tuple[int, set[str]]:
     """
-    Recursively install `installer.dependencies` (list of installer names or
-    installer objects) before installing `installer` itself.
-    Returns 0 on success; non-zero aborts the whole command.
+    Recursively resolve `installer.dependencies` (list of installer names or
+    installer objects) before running `installer` itself.
+
+    Behaviour by top-level method
+    -----------------------------
+    * install: dependencies use their 'install' method (no-op if already installed)
+    * upgrade: dependencies use 'upgrade' if installed, otherwise 'install'
+    * uninstall: dependencies are ignored
 
     :param installer: The installer whose dependencies to install.
     :param installers_map: A map of installer name -> installer instance.
@@ -172,11 +177,9 @@ def _run_dependencies(
     done = done or set()
     stack = stack or []
 
-    # When resolving dependencies for an 'upgrade', we only need to ensure
-    # they are installed. Dependencies should always use their 'install'
-    # method, even if they implement 'upgrade'.
-    if method == "upgrade":
-        method = "install"
+    # We never cascade uninstalls to dependencies.
+    if method == "uninstall":
+        return 0, done
 
     deps = getattr(installer, "dependencies", []) or []
     for dep in deps:
@@ -210,35 +213,80 @@ def _run_dependencies(
             )
             return 1, done
 
-        # If the dependency is already installed, skip its installation (and its own deps)
-        if dep_inst.is_installed():
-            console.print(
-                f"Dependency [{dep_name}] is already installed. Skipping.",
-                style="cyan",
-                markup=False,
-            )
-            done.add(dep_name)
+        is_installed = dep_inst.is_installed()
+        known_methods: list[str] = _base.get_known_methods(dep_inst)
+
+        # Work out which method we actually want to call on this dependency.
+        if method == "install":
+            # For install we only need the dependency to exist; if it's
+            # already installed we leave it alone.
+            if is_installed:
+                console.print(
+                    f"Dependency [{dep_name}] is already installed. Skipping.",
+                    style="cyan",
+                    markup=False,
+                )
+                done.add(dep_name)
+                continue
+
+            if "install" not in known_methods:
+                console.print(
+                    f"Dependency [{dep_name}] has no 'install' method.",
+                    style="red",
+                    markup=False,
+                )
+                return 1, done
+
+            dep_method_name: Literal["install", "uninstall", "upgrade"] = "install"
+
+        elif method == "upgrade":
+            # On upgrade:
+            #   * if the dependency is installed, prefer its `upgrade` method
+            #     and fall back to `install` if needed.
+            #   * if the dependency is NOT installed, use `install`.
+            if is_installed:
+                if "upgrade" in known_methods:
+                    dep_method_name = "upgrade"
+                else:
+                    console.print(
+                        f"Dependency [{dep_name}] doesn't have 'upgrade' method.",
+                        style="red",
+                        markup=False,
+                    )
+                    return 1, done
+            else:
+                # Not installed: install instead of upgrade.
+                if "install" not in known_methods:
+                    console.print(
+                        f"Dependency [{dep_name}] is not installed and has no 'install' method.",
+                        style="red",
+                        markup=False,
+                    )
+                    return 1, done
+                dep_method_name = "install"
+        else:
+            # Shouldn't happen because we early-return for "uninstall"
             continue
 
-        # Decide which method to run on the dependency:
-        #  - Prefer the same 'method' as the main command, if supported.
-        #  - Otherwise fall back to 'install' (to ensure the dep is present).
-        known_methods: list[str] = _base.get_known_methods(dep_inst)
-        dep_method_name: Literal["install", "uninstall", "upgrade"] = method if method in known_methods else "install"
-
-        # Admin check for the dependency if required on this platform. Dependencies are always checked only for the 'install' method.
+        # Admin check for the dependency if required on this platform.
         rc = _require_admin_if_needed(dep_inst, method=dep_method_name)
         if rc != 0:
             return rc, done
 
-        # Recurse first so deep deps install in correct order
+        # Recurse first so deep deps resolve in correct order. We keep passing
+        # the *top-level* method ("install"/"upgrade") so all transitive
+        # dependencies follow the same policy.
         rc, _ = _run_dependencies(dep_inst, installers_map, method, done, stack + [dep_name])
         if rc != 0:
             return rc, done
 
         # Finally, actually run the chosen method on the dependency
-        verb = "Installing" if dep_method_name == "install" else (
-            "Upgrading" if dep_method_name == "upgrade" else f"Running '{dep_method_name}' for"
+        verb = (
+            "Installing"
+            if dep_method_name == "install"
+            else "Upgrading"
+            if dep_method_name == "upgrade"
+            else f"Running '{dep_method_name}' for"
         )
         console.print(
             f"{verb} dependency [{dep_name}] for [{installer.name}]…",

@@ -40,6 +40,10 @@ class PyCharm(_base.BaseInstaller):
 
         return 0
 
+    def upgrade(self):
+        print("Currently, Windows should handle Winget upgrades, but you can run the install command again to ensure you have the latest version.")
+        return 0
+
     def is_installed(self) -> bool:
         return winget_installer.is_winget_installed()
 
@@ -50,6 +54,11 @@ class PyCharm(_base.BaseInstaller):
         if method == "install":
             method_help: str = (
                 "This method installs Nuget powershell module, WinGet powershell module from NuGet repo, and then the latest version of Winget for all users'.\n"
+            )
+            print(method_help)
+        if method == "upgrade":
+            method_help: str = (
+                "Currently, Windows should handle Winget upgrades, but you can run the install command again to ensure you have the latest version.\n"
             )
             print(method_help)
         else:
