@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.30.1 - 08.12.2025
+  * Fixed auto-complete issue for aliases in interactive.
 * 0.30.0 - 08.12.2025
   * Fixed chocolatey and winget wrappers. 
 * 0.29.1 - 06.12.2025

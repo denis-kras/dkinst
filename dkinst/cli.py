@@ -78,13 +78,18 @@ class DkinstCompleter(Completer):
                 prefix = parts[-1]
             first_word = parts[0] if parts else ""
 
+        # Treat aliases (i, up, un, m, a, h) as their full commands
+        normalized_first = COMMAND_ALIASES.get(first_word, first_word)
+
         candidates: list[str] = []
 
         if token_index == 0:
-            # Completing the first word: choose from subcommands
-            candidates = [cmd for cmd in self.subcommands if cmd.startswith(prefix)]
-        elif token_index == 1 and first_word in _base.ALL_METHODS:
-            # Completing the second word: installer names for install/upgrade/uninstall/manual
+            # Completing the first word: include both full commands and aliases
+            all_cmds = list(self.subcommands) + list(COMMAND_ALIASES.keys())
+            candidates = [cmd for cmd in all_cmds if cmd.startswith(prefix)]
+
+        elif token_index == 1 and normalized_first in _base.ALL_METHODS:
+            # Completing the second word after install/upgrade/uninstall/manual
             candidates = [name for name in self.installer_names if name.startswith(prefix)]
 
         for cand in candidates:
