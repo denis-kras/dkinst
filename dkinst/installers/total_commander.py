@@ -19,6 +19,9 @@ class TotalCommander(_base.BaseInstaller):
         self.platforms: list = ["windows"]
 
         self.dependencies: list[str] = ['winget']
+        self.admins: dict = {
+            "windows": ["install", "upgrade"]
+        }
 
     def install(
             self,

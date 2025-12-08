@@ -304,17 +304,6 @@ def _run_dependencies(
     return 0, done
 
 
-def ensure_root_or_reexec() -> None:
-    """If not root, re-exec this command under sudo, preserving args."""
-    if os.geteuid() == 0:
-        return  # already root
-    exe = shutil.which("dkinst") or sys.argv[0]
-    # make it absolute in case it was found via PATH
-    exe = os.path.abspath(exe)
-    # Replace the current process with: sudo <same dkinst> <same args>
-    os.execvp("sudo", ["sudo", "-E", exe] + sys.argv[1:])
-
-
 def _require_admin_if_needed(
         installer: BaseInstaller,
         method: Literal["install", "uninstall", "upgrade"] = "install"
@@ -366,12 +355,21 @@ def _require_admin_if_needed(
 
     if current_platform == 'debian':
         # Auto-elevate; this never returns on success
-        ensure_root_or_reexec()
+        permissions.ensure_root_or_reexec_debian()
 
         # If we get here, sudo failed
         venv = os.environ.get('VIRTUAL_ENV', None)
         if venv:
             print(f'Try: sudo "{venv}/bin/dkinst" {method} {installer.name}')
+    elif current_platform == 'windows':
+        print("Will try to relaunch with elevated privileges...")
+        # Auto-elevate via UAC; this will exit on success
+        permissions.ensure_admin_or_reexec_windows()
+        # If we get here, elevation failed or was cancelled
+        console.print(
+            "You can also rerun this command from an elevated PowerShell or CMD.",
+            style='yellow',
+        )
 
     return 1
 

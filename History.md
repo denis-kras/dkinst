@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.32.0 - 08.12.2025
+  * Added runas admin on windows.
 * 0.31.0 - 08.12.2025
   * Fixed dependencies upgrade issue.
 * 0.30.1 - 08.12.2025
