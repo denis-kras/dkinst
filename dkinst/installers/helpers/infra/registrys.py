@@ -1,9 +1,115 @@
 import os
 import ctypes
 from typing import Literal
+import sys
 
 if os.name == "nt":
     import winreg
+
+
+HKLM = winreg.HKEY_LOCAL_MACHINE
+ACCESS_READ = winreg.KEY_READ | winreg.KEY_WOW64_64KEY
+ACCESS_WRITE = (
+    winreg.KEY_SET_VALUE | winreg.KEY_CREATE_SUB_KEY | winreg.KEY_WOW64_64KEY
+)
+
+
+def set_policy_dword(
+        name: str,
+        value: int,
+        key_in_hive: str,
+        hive: str = "HKLM",
+        dry_run: bool = False,
+        verbose: bool = False
+) -> None:
+    """Create/update a REG_DWORD under the Terminal Services policy key."""
+    full_path = f"{hive}\\{key_in_hive}\\{name}"
+    if dry_run:
+        print(f"[DRY-RUN] Would set {full_path} = {value} (DWORD)")
+        return
+
+    if verbose:
+        print(f"Setting {full_path} = {value} (DWORD)")
+
+    # Currently only HKLM is supported
+    if hive == "HKLM":
+        hive_winreg = HKLM
+    else:
+        raise ValueError(f"Unsupported hive: {hive}")
+
+    with winreg.CreateKeyEx(hive_winreg, key_in_hive, 0, ACCESS_WRITE) as key:
+        winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, int(value))
+
+
+def get_policy_dword(
+        name: str,
+        key_in_hive: str,
+        hive: str = "HKLM"
+):
+    """Read a REG_DWORD under the Terminal Services policy key, or return None."""
+    # Currently only HKLM is supported
+    if hive == "HKLM":
+        hive_winreg = HKLM
+    else:
+        raise ValueError(f"Unsupported hive: {hive}")
+
+    try:
+        with winreg.OpenKey(hive_winreg, key_in_hive, 0, ACCESS_READ) as key:
+            value, value_type = winreg.QueryValueEx(key, name)
+            if value_type != winreg.REG_DWORD:
+                return None
+            return int(value)
+    except FileNotFoundError:
+        return None
+    except OSError:
+        return None
+
+
+def delete_policy_value(
+        name: str,
+        key_in_hive: str,
+        hive: str = "HKLM",
+        dry_run: bool = False,
+        verbose: bool = False
+) -> None:
+    """
+    Delete a registry value under the Terminal Services policy key so the policy
+    falls back to 'Not configured' / OS default.
+
+    This is intentionally separate from infra.registrys so we don't have to
+    change that module; it operates directly on HKLM.
+    """
+    full_path = f"{hive}\\{key_in_hive}\\{name}"
+
+    if dry_run:
+        print(f"[DRY-RUN] Would delete {full_path}")
+        return
+
+    if winreg is None:
+        print("winreg module not available; cannot delete registry value.", file=sys.stderr)
+        return
+
+    access = winreg.KEY_SET_VALUE
+    if hasattr(winreg, "KEY_WOW64_64KEY"):
+        access |= winreg.KEY_WOW64_64KEY
+
+    if hive == "HKLM":
+        hive_winreg = HKLM
+    else:
+        raise ValueError(f"Unsupported hive: {hive}")
+
+    try:
+        with winreg.OpenKey(hive_winreg, key_in_hive, 0, access) as key:
+            try:
+                if verbose:
+                    print(f"Deleting {full_path}")
+                winreg.DeleteValue(key, name)
+            except FileNotFoundError:
+                if verbose:
+                    print(f"{full_path} does not exist; nothing to delete.")
+    except FileNotFoundError:
+        if verbose:
+            print(f"{hive}\\{key_in_hive} does not exist; nothing to delete.")
 
 
 def _broadcast_env_change(_ctypes):

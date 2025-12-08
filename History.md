@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.34.0 - 08.12.2025
+  * Added RDP GPU support enabler (Windows).
 * 0.33.0 - 08.12.2025
   * Added autocompletion in 'available' method.
 * 0.32.0 - 08.12.2025

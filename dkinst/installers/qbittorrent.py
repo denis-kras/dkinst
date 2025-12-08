@@ -61,6 +61,12 @@ class QTorrent(_base.BaseInstaller):
                 "Debian: This method upgrades qTorrent from apt repo.\n"
             )
             print(method_help)
+        elif method == "uninstall":
+            method_help: str = (
+                "Windows: This method uninstalls qTorrent using Chocolatey.\n"
+                "Debian: This method uninstalls qTorrent using apt.\n"
+            )
+            print(method_help)
         else:
             raise ValueError(f"Unknown method '{method}'.")
 
