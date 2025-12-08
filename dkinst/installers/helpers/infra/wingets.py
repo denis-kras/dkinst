@@ -1,42 +1,15 @@
-import subprocess
-
 from rich.console import Console
+
+from .commands import run_package_manager_command
 
 
 console = Console()
 
 
-def _run_winget(cmd: list[str], action: str) -> int:
-    """Run a winget command and handle output and errors nicely."""
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        console.print("[red]winget was not found on PATH. Is it installed?[/red]")
-        return 1
-
-    if result.returncode != 0:
-        console.print(f"[red]{action} failed with exit code {result.returncode}[/red]")
-
-        if result.stderr:
-            console.print(result.stderr)
-        elif result.stdout:
-            # Sometimes tools only write errors to stdout
-            console.print(result.stdout)
-
-        return result.returncode
-
-    console.print(f"[green]{action} completed successfully.[/green]")
-    return 0
-
-
-def install_package(package_id: str) -> int:
+def install_package(package_id: str) -> tuple[int, str]:
     console.print(f"[blue]Installing WinGet package ID: {package_id}[/blue]")
 
-    return _run_winget(
+    return run_package_manager_command(
         [
             "winget",
             "install",
@@ -49,10 +22,10 @@ def install_package(package_id: str) -> int:
     )
 
 
-def upgrade_package(package_id: str) -> int:
+def upgrade_package(package_id: str) -> tuple[int, str]:
     console.print(f"[blue]Upgrading WinGet package ID: {package_id}[/blue]")
 
-    return _run_winget(
+    return run_package_manager_command(
         [
             "winget",
             "upgrade",
@@ -65,10 +38,10 @@ def upgrade_package(package_id: str) -> int:
     )
 
 
-def uninstall_package(package_id: str) -> int:
+def uninstall_package(package_id: str) -> tuple[int, str]:
     console.print(f"[blue]Uninstalling WinGet package ID: {package_id}[/blue]")
 
-    return _run_winget(
+    return run_package_manager_command(
         [
             "winget",
             "uninstall",

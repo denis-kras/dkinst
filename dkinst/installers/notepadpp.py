@@ -14,37 +14,43 @@ class NotepadPP(_base.BaseInstaller):
         super().__init__()
         self.name: str = Path(__file__).stem
         self.description: str = "Notepad++ for Windows"
-        self.version: str = "1.0.0"
-        # initial.
+        self.version: str = "1.0.1"
+        # added force.
         self.platforms: list = ["windows"]
 
         self.dependencies: list[str] = ['winget']
 
     def install(
             self,
+            force: bool = False
     ):
         return winget_fallback_choco.method_package(
             method="install",
             winget_package_id=WINGET_PACKAGE_ID,
-            choco_package_name=CHOCO_PACKAGE
+            choco_package_name=CHOCO_PACKAGE,
+            force=force
         )
 
     def upgrade(
             self,
+            force: bool = False
     ):
         return winget_fallback_choco.method_package(
             method="upgrade",
             winget_package_id=WINGET_PACKAGE_ID,
-            choco_package_name=CHOCO_PACKAGE
+            choco_package_name=CHOCO_PACKAGE,
+            force=force
         )
 
     def uninstall(
             self,
+            force: bool = False
     ):
         return winget_fallback_choco.method_package(
             method="upgrade",
             winget_package_id=WINGET_PACKAGE_ID,
-            choco_package_name=CHOCO_PACKAGE
+            choco_package_name=CHOCO_PACKAGE,
+            force=force
         )
 
     def _show_help(

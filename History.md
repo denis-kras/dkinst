@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.30.0 - 08.12.2025
+  * Fixed chocolatey and winget wrappers. 
 * 0.29.1 - 06.12.2025
   * Fixed robocorp installer.
 * 0.29.0 - 04.12.2025
