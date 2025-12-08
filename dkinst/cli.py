@@ -123,16 +123,26 @@ def _get_installers() -> list[BaseInstaller]:
     return installers_list
 
 
-def cmd_available() -> None:
-    """List every known installer with metadata."""
+def cmd_available(prefix: str | None = None) -> None:
+    """List every known installer with metadata.
+
+    If `prefix` is provided, only installers whose name starts with that prefix
+    (case-insensitive) are shown.
+    """
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("Name", style="bold")
     table.add_column("Platforms")
     table.add_column("Methods")
     table.add_column("Manual Arguments")
 
-    # collect all installers
     installers_list: list[BaseInstaller] = _get_installers()
+
+    if prefix:
+        p = prefix.lower()
+        installers_list = [
+            inst for inst in installers_list
+            if inst.name.lower().startswith(p)
+        ]
 
     methods: list[str]
     for installer in installers_list:
@@ -479,7 +489,8 @@ def _dispatch(
         return 0
 
     if namespace.sub == "available":
-        cmd_available()
+        prefix = getattr(namespace, "name_prefix", None)
+        cmd_available(prefix)
         return 0
 
     if namespace.sub == "edit-config":
@@ -681,7 +692,15 @@ def _make_parser() -> argparse.ArgumentParser:
         # Everything after <script> is handed untouched to the installer
         sc.add_argument("installer_args", nargs=argparse.REMAINDER)
 
-    sub.add_parser("available")
+    available_parser = sub.add_parser("available")
+    available_prefix_arg = available_parser.add_argument(
+        "name_prefix",
+        nargs="?",
+        help="optional prefix to filter installer names (e.g. 'to' shows installers starting with 'to')",
+    )
+    # Optional: enable completion of installer names for the prefix
+    available_prefix_arg.completer = _installer_name_completer
+
     sub.add_parser("edit-config")
     sub.add_parser("prereqs")
     sub.add_parser("prereqs-uninstall")
