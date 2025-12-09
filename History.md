@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.36.0 - 09.12.2025
+  * Added MS Orca MSI editor installer (Windows).
 * 0.35.1 - 09.12.2025
   * Automating ESET Internet Security uninstall.
 * 0.35.0 - 08.12.2025

@@ -20,7 +20,7 @@ sudo apt install -y qbittorrent
 """]
 
 
-class QTorrent(_base.BaseInstaller):
+class QBitTorrent(_base.BaseInstaller):
     def __init__(self):
         super().__init__(__file__)
         self.description: str = "qTorrent Installer"
@@ -50,20 +50,20 @@ class QTorrent(_base.BaseInstaller):
     ) -> None:
         if method == "install":
             method_help: str = (
-                "Windows: This method installs qTorrent from Chocolatey repo (choco has the latest version faster).\n"
-                "Debian: This method installs qTorrent from apt repo.\n"
+                f"Windows: This method installs {self.name} from Chocolatey repo (choco has the latest version faster).\n"
+                f"Debian: This method installs {self.name} from apt repo.\n"
             )
             print(method_help)
         elif method == "upgrade":
             method_help: str = (
-                "Windows: This method upgrades qTorrent from Chocolatey repo (choco has the latest version faster).\n"
-                "Debian: This method upgrades qTorrent from apt repo.\n"
+                f"Windows: This method upgrades {self.name} from Chocolatey repo (choco has the latest version faster).\n"
+                f"Debian: This method upgrades {self.name} from apt repo.\n"
             )
             print(method_help)
         elif method == "uninstall":
             method_help: str = (
-                "Windows: This method uninstalls qTorrent using Chocolatey.\n"
-                "Debian: This method uninstalls qTorrent using apt.\n"
+                f"Windows: This method uninstalls {self.name} using Chocolatey.\n"
+                f"Debian: This method uninstalls {self.name} using apt.\n"
             )
             print(method_help)
         else:
