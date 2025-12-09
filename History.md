@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.35.1 - 09.12.2025
+  * Automating ESET Internet Security uninstall.
 * 0.35.0 - 08.12.2025
   * Added ESET Internet Security installer (Windows).
   * Changed base installer class and all the subclass to auto name and dir_path.

@@ -25,12 +25,13 @@ class QTorrent(_base.BaseInstaller):
             self,
             force: bool = False
     ):
-        return eset_installer.main(install=True, installer_dir=self.dir_path, force_download=force)
+        return eset_installer.main(install=True, installer_dir=self.dir_path, force=force)
 
     def uninstall(
-            self
+            self,
+            force: bool = False
     ):
-        return eset_installer.main(uninstall=True, installer_dir=self.dir_path)
+        return eset_installer.main(uninstall=True, installer_dir=self.dir_path, force=force)
 
     def _show_help(
             self,
