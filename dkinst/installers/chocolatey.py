@@ -9,8 +9,7 @@ from .helpers import chocolatey_installer
 
 class Chocolatey(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Chocolatey for Windows"
         self.version: str = chocolatey_installer.VERSION
         self.platforms: list = ["windows"]

@@ -8,8 +8,7 @@ from . helpers import wsl_manager
 
 class WSL(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Windows Subsystem for Linux (WSL) manager."
         self.version: str = wsl_manager.VERSION
         self.platforms: list = ["windows"]

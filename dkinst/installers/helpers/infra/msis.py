@@ -12,7 +12,7 @@ if platform.system().lower() == 'windows':
 console = Console()
 
 
-ERROR_CODES = {
+ERROR_INSTALL_CODES = {
     '1603': 'The App is already installed or Insufficient permissions',
     '1619': 'This installation package could not be opened. Verify that the package exists and that you can '
             'install it manually, also check the installation command line switches'
@@ -60,25 +60,44 @@ def wait_for_msiexec_processes_to_finish(msi_file_path: str):
         raise Exception(f"MSI Installation failed. Return code: {result_code}")
 
 
-def install_msi(
-        msi_path,
+def run_msi(
+        install: bool = False,
+        uninstall: bool = False,
+        msi_path: str = None,
+        guid: str = None,
         silent_no_gui: bool = False,
         silent_progress_bar: bool = False,
         no_restart: bool = False,
         terminate_required_processes: bool = False,
+        disable_msi_restart_manager: bool = False,
         additional_args: str = None,
         create_log_near_msi: bool = False,
         log_file_path: str = None,
         scan_log_for_errors: bool = False,
         # as_admin=True
-):
+) -> int:
     """
-    Install an MSI file silently.
+    MSI wrapper.
+
+    If you're using log, at the end of the installation, you can check the log file for errors or additional parameters.
+    For example if you used:
+        msiexec /i "c:\\path\\to\\file.msi" /l*v "c:\\path\\to\\file.log REBOOT=ReallySuppress"
+    It will be shown as:
+        Property(S): REBOOT = ReallySuppress
+    Meaning you can check for other properties that were set during the installation and set them manually in the msi command line.
+
+    :param install: bool, whether to install the MSI file.
+    :param uninstall: bool, whether to uninstall the MSI file or guid.
     :param msi_path: str, path to the MSI file.
+    :param guid: str, the GUID of the MSI to uninstall/install. Mostly to uninstall. Can be passed with '{}' or without it.
+        If you pass the GUID without '{}', it will be added automatically.
     :param silent_no_gui: bool, whether to run the installation silently, without showing GUI.
     :param silent_progress_bar: bool, whether to show a progress bar during silent installation.
     :param no_restart: bool, whether to restart the computer after installation.
     :param terminate_required_processes: bool, whether to terminate processes that are required by the installation.
+    :param disable_msi_restart_manager: bool, whether to disable the MSI restart manager.
+        Sometimes 'terminate_required_processes' is not enough, and the MSI restart manager asks you to close applications.
+        If you set this to True, it will disable the MSI restart manager, and the installation will not ask you to close applications.
     :param additional_args: str, additional arguments to pass to the msiexec command.
     :param create_log_near_msi: bool, whether to create a log file near the MSI file.
         If the msi file located in 'c:\\path\\to\\file.msi', the log file will be created in 'c:\\path\\to\\file.log'.
@@ -88,8 +107,19 @@ def install_msi(
         The log options that will be used: /l*v c:\\path\\to\\file.log
     :param scan_log_for_errors: bool, whether to scan the log file for errors in case of failure.
     # :param as_admin: bool, whether to run the installation as administrator.
-    :return:
+
+    :return: int, return code of the msiexec command.
     """
+
+    if install and uninstall:
+        raise ValueError("You cannot install and uninstall at the same time. Choose one of them.")
+    if not install and not uninstall:
+        raise ValueError("You must specify either install or uninstall.")
+
+    if guid and msi_path:
+        raise ValueError("You cannot specify both msi_path and guid. Choose one of them.")
+    if not msi_path and not guid:
+        raise ValueError("You must specify either msi_path or guid.")
 
     if not permissions.is_admin():
         raise PermissionError("This function requires administrator privileges.")
@@ -107,7 +137,20 @@ def install_msi(
         raise ValueError("[scan_log_for_errors] is set, but [log_file_path] or [create_log_near_msi] is not set.")
 
     # Define the msiexec command
-    command = f'msiexec /i "{msi_path}"'
+    command: str = "msiexec"
+    if install:
+        command = f'{command} /i'
+    elif uninstall:
+        command = f'{command} /x'
+    else:
+        raise ValueError("You must specify either install or uninstall.")
+
+    if msi_path:
+        command = f'{command} "{msi_path}"'
+    elif guid:
+        if not guid.startswith('{'):
+            guid = f'{{{guid}}}'
+        command = f'{command} {guid}'
 
     if silent_no_gui:
         command = f"{command} /qn"
@@ -117,10 +160,13 @@ def install_msi(
         command = f"{command} /norestart"
 
     if log_file_path:
-        command = f"{command} /l*v {log_file_path}"
+        command = f'{command} /l*v "{log_file_path}"'
 
     if terminate_required_processes:
         command = f"{command} REBOOT=ReallySuppress"
+
+    if disable_msi_restart_manager:
+        command = f'{command} MSIRESTARTMANAGERCONTROL="Disable"'
 
     if additional_args:
         if additional_args.startswith(' '):
@@ -136,9 +182,20 @@ def install_msi(
     # Check the result
     if result.returncode == 0:
         console.print("MSI Installation completed.", style="green")
+        return 0
+    elif result.returncode in (3010, 1641):
+        console.print("ESET Internet Security uninstall completed. A reboot is required.", style="yellow")
+        return 0
     else:
-        message = (f"Installation failed. Return code: {result.returncode}\n{ERROR_CODES.get(str(result.returncode), '')}\n"
-                   f"MSI path: {msi_path}\nCommand: {command}\nOutput: {result.stdout}\nError: {result.stderr}")
+        message: str = f"Installation failed. Return code: {result.returncode}\n"
+
+        if install:
+            message += f"Message: {ERROR_INSTALL_CODES.get(str(result.returncode), '')}\n"
+
+        message += (f"MSI path: {msi_path}\n"
+                    f"Command: {command}\n"
+                    f"STDOUT: {result.stdout}\n"
+                    f"STDERR: {result.stderr}")
 
         if scan_log_for_errors:
             with open(log_file_path, 'r', encoding='utf-16 le') as f:
@@ -150,4 +207,5 @@ def install_msi(
                     message += f"\n{line}"
 
         console.print(message, style="red")
-        raise MsiInstallationError("MSI Installation Failed.")
+        # raise MsiInstallationError("MSI Installation Failed.")
+        return result.returncode

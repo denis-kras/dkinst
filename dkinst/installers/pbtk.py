@@ -11,14 +11,10 @@ from .helpers.infra.printing import printc
 
 class PBTK(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "pbtk script Installer"
         self.version: str = "1.0.0"
         self.platforms: list = ["windows", "debian"]
-        self.helper: ModuleType | None = None
-
-        self.dir_path: str = str(Path(self.base_path) / self.name)
 
     def install(
             self,

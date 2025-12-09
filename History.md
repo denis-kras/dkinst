@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.35.0 - 08.12.2025
+  * Added ESET Internet Security installer (Windows).
+  * Changed base installer class and all the subclass to auto name and dir_path.
 * 0.34.0 - 08.12.2025
   * Added RDP GPU support enabler (Windows).
 * 0.33.0 - 08.12.2025

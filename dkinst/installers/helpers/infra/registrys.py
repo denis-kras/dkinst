@@ -349,3 +349,61 @@ def set_environment_variable(
         "scope": scope,
         "broadcasted": did_broadcast,
     }
+
+
+def _iter_uninstall_keys():
+    """Iterate over relevant Windows uninstall registry keys."""
+    # Only valid on Windows where winreg is available
+    hives = [
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
+    ]
+    for hive, path in hives:
+        try:
+            key = winreg.OpenKey(hive, path)
+        except Exception:
+            continue
+        with key:
+            i = 0
+            while True:
+                try:
+                    subkey_name = winreg.EnumKey(key, i)
+                except OSError:
+                    break
+                yield hive, path, subkey_name
+                i += 1
+
+
+def find_uninstall_string(
+        target_names: list[str]
+):
+    """
+    Locate program uninstall string in registry.
+
+    Returns the uninstall command line (string) or None if not found.
+    """
+
+    for hive, parent_path, subkey_name in _iter_uninstall_keys():
+        try:
+            subkey = winreg.OpenKey(hive, parent_path + "\\" + subkey_name)
+        except Exception:
+            continue
+        with subkey:
+            try:
+                display_name, _ = winreg.QueryValueEx(subkey, "DisplayName")
+            except Exception:
+                continue
+
+            if not any(name.lower() in display_name.lower() for name in target_names):
+                continue
+
+            try:
+                uninstall_string, _ = winreg.QueryValueEx(subkey, "UninstallString")
+            except Exception:
+                continue
+
+            print(f"[+] Found ESET installation: {display_name}")
+            print(f"[+] Uninstall string: {uninstall_string}")
+            return uninstall_string
+
+    return None

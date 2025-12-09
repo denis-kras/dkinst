@@ -14,12 +14,10 @@ console = Console()
 
 class BashDB(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "bashdb Installer"
         self.version: str = "1.0.0"
         self.platforms: list = ["debian"]
-        self.helper: ModuleType | None = None
 
         self.dependencies: list[str] = ["brew"]
 

@@ -12,8 +12,7 @@ console = Console()
 
 class PyCharm(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Winget Installer"
         self.version: str = winget_installer.VERSION
         self.platforms: list = ["windows"]

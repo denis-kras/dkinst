@@ -13,12 +13,11 @@ console = Console()
 
 class ElasticElasticsearch(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Elastic Elasticsearch 8 Installer"
         self.version: str = elastic_manager.VERSION
         self.platforms: list = ["debian"]
-        self.helper: ModuleType | None = elastic_manager
+        self.helper: ModuleType = elastic_manager
 
     def install(
             self,

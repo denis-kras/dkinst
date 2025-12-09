@@ -11,8 +11,7 @@ CHOCO_PACKAGE: str = "notepadplusplus"
 
 class NotepadPP(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Notepad++ for Windows"
         self.version: str = "1.0.1"
         # added force.

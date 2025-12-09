@@ -20,14 +20,11 @@ UUID: str = "gjsosk@vishram1123.com"
 
 class VirtualKeyboard(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
+        super().__init__(__file__)
         self.version: str = "1.0.1"
         # Changed from direct dbus to GitHub file install.
-
-        self.name: str = Path(__file__).stem
         self.description: str = "Virtual Keyboard GJS OSK Installer"
         self.platforms: list = ["debian"]
-        self.helper: ModuleType | None = None
 
     def install(
             self,

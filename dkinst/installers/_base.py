@@ -16,9 +16,15 @@ ALL_METHODS: list[str] | None = None
 
 
 class BaseInstaller:
-    def __init__(self):
+    def __init__(
+            self,
+            module_file_path: str
+    ):
+        """
+        :param module_file_path: Should be the '__file__' of the child class.
+        """
         # The name of the installation script that will be used by the main script to install.
-        self.name: str = "baseinstall"
+        self.name: str = Path(module_file_path).stem
         # The description of the installation script.
         self.description: str = "Base Installer"
         # The version of the installation script.
@@ -39,7 +45,8 @@ class BaseInstaller:
         self.admins: dict = {}
 
         self.base_path: str = INSTALLATION_PATH_PORTABLE_WINDOWS
-        self.dir_path: str | None = None  # Path to the installation directory of the installed application, if applicable. Example: Path(self.base_path) / self.name
+        # Path to the installation directory of the installed application, if applicable. Example: Path(self.base_path) / self.name
+        self.dir_path: str = str(Path(self.base_path) / self.name)
         self.exe_path: str | None = None  # Path to the main executable of the installed application, if applicable. Example: Path(self.dir_path) / "app.exe"
 
     def install(self):

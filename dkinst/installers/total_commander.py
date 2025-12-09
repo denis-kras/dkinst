@@ -11,8 +11,7 @@ CHOCO_PACKAGE: str = "totalcommander"
 
 class TotalCommander(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "TotalCommander for Windows"
         self.version: str = "1.0.2"
         # Using winget as main and choco as fallback.

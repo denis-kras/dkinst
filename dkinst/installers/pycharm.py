@@ -8,12 +8,11 @@ from .helpers import pycharm_installer
 
 class PyCharm(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "PyCharm Installer"
         self.version: str = pycharm_installer.VERSION
         self.platforms: list = ["windows", "debian"]
-        self.helper: ModuleType | None = pycharm_installer
+        self.helper: ModuleType = pycharm_installer
 
     def install(
             self,

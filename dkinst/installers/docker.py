@@ -8,12 +8,11 @@ from .helpers import docker_installer
 
 class Docker(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Docker Installer"
         self.version: str = docker_installer.VERSION
         self.platforms: list = ["debian"]
-        self.helper: ModuleType | None = docker_installer
+        self.helper: ModuleType  = docker_installer
 
     def install(
             self,

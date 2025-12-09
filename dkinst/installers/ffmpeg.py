@@ -8,8 +8,7 @@ from . helpers import ffmpeg_manager
 
 class FFMPEG(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "FFMPEG Portable for Windows"
         self.version: str = ffmpeg_manager.VERSION
         self.platforms: list = ["windows"]
@@ -18,7 +17,6 @@ class FFMPEG(_base.BaseInstaller):
         self.dependencies: list[str] = ['winget']
 
         # These are currently not in use since we're using winget, but in the future we might need them.
-        # self.dir_path: str = str(Path(self.base_path) / self.name)
         # self.exe_path: str = str(Path(self.dir_path) / "ffmpeg.exe")
 
     def install(

@@ -13,8 +13,7 @@ console = Console()
 
 class QTorrent(_base.BaseInstaller):
     def __init__(self):
-        super().__init__()
-        self.name: str = Path(__file__).stem
+        super().__init__(__file__)
         self.description: str = "Windows RDP GPU Setting Installer"
         self.version: str = rdp_gpu_manager.VERSION
         # Added windows.
@@ -45,10 +44,14 @@ class QTorrent(_base.BaseInstaller):
                 "Restarts RDP service to apply changes immediately.\n"
             )
             print(method_help)
-        elif method == "upgrade":
+        elif method == "uninstall":
             method_help: str = (
-                "Windows: This method upgrades qTorrent from Chocolatey repo (choco has the latest version faster).\n"
-                "Debian: This method upgrades qTorrent from apt repo.\n"
+                "Sets 3 RDP Policies to defaults, through the registry, to disable GPU acceleration over RDP:.\n"
+                "1. Unset GPU for RDP sessions.\n"
+                "2. Unset Hardware Encoding for RDP sessions.\n"
+                "3. Unset AVC444 mode for RDP sessions.\n"
+                "\n"
+                "Restarts RDP service to apply changes immediately.\n"
             )
             print(method_help)
         else:
