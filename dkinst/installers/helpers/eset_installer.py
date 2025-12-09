@@ -58,6 +58,7 @@ def install_eset_internet_security(
         installer_path,
         "--silent",
         "--accepteula",
+        "--language 1033",
         "--msi-property-ehs",
         "PRODUCTTYPE=eis",
     ]
