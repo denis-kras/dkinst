@@ -15,14 +15,14 @@ import sys
 import re
 import shutil
 
-from .infra import registrys, msis, win_open_windows
+from .infra import registrys, msis, win_open_windows, languages
 from .infra.printing import printc
 
 from atomicshop import web
 
 
-VERSION: str = "1.0.0"
-RELEASE_COMMENT: str = "Initial"
+VERSION: str = "1.0.1"
+RELEASE_COMMENT: str = "Language selection and uninstall improvements."
 
 
 # Official "latest" offline installer URLs for ESET Internet Security (home product) :contentReference[oaicite:2]{index=2}
@@ -40,8 +40,16 @@ def _get_system_architecture_bits() -> int:
 def install_eset_internet_security(
         installer_dir: str,
         force_download: bool = False,
+        language: str = 'english'
 ) -> int:
-    """Download and silently install ESET Internet Security."""
+    """
+    Download and silently install ESET Internet Security.
+
+    :param installer_dir: Directory will be used to save the installer.
+    :param force_download: If True, will re-download the installer even if it already exists in the specified directory.
+    :param language: Language for the GUI of the installed product. Default is 'english'.
+    :return: Exit code from installation process.
+    """
 
     bits = _get_system_architecture_bits()
 
@@ -53,18 +61,38 @@ def install_eset_internet_security(
 
     installer_path = web.download(download_url, target_directory=installer_dir, overwrite=force_download)
 
+    language_lcid: str = str(languages.convert_string_to_lcid(language))
+
     # Silent install switches documented for ESET Internet Security :contentReference[oaicite:3]{index=3}
     cmd = [
         installer_path,
         "--silent",
         "--accepteula",
-        "--language 1033",
+        "--language", language_lcid,
         "--msi-property-ehs",
         "PRODUCTTYPE=eis",
     ]
 
     print(f"[+] Running installer: {' '.join(cmd)}")
-    completed = subprocess.run(cmd, check=False)
+    try:
+        completed = subprocess.run(cmd, check=False)
+    except OSError as e:
+        # Typical for partial/corrupted download: WinError 193
+        winerr = getattr(e, "winerror", None)
+
+        printc(
+            f"[!] Failed to start ESET installer (OSError, winerror={winerr}): {e}",
+            "yellow",
+        )
+
+        # Only re-download for "bad exe format" or if you want for any OSError
+        if winerr == 193:
+            # Not a bad EXE, re-download probably will not help
+            printc("[!] Looks like the downloaded file is corrupted, use the 'force' to redownload.", "red")
+        else:
+            raise e
+
+        return 1
 
     if completed.returncode != 0:
         printc(f"[!] Error installing ESET Internet Security. Exited with code {completed.returncode}\n"
@@ -169,7 +197,8 @@ def uninstall_eset_internet_security(
         log_file_path=f"{installer_dir}{os.sep}uninstall.log",
         terminate_required_processes=True,
         disable_msi_restart_manager=True,
-        additional_args='PASSWORD=""',
+        # additional_args='PASSWORD=""',
+        # additional_args='PRODUCT_LANG=1033 PRODUCT_LANG_CODE=en-us',
     )
 
     # --- After uninstall, kill only NEW msedge.exe processes ---
@@ -204,16 +233,23 @@ def _make_parser():
         help="Download and install the latest ESET Internet Security.",
     )
     group.add_argument(
+        "--uninstall",
+        action="store_true",
+        help="Uninstall ESET Internet Security.",
+    )
+
+    parser.add_argument(
         "--installer-dir",
         type=str,
         default=None,
         help="The path where to download the installer. Need only the directory, no need for file name.\n"
-             "If not provided, %TEMP% directory will be used.",
+             "If not provided, %%TEMP%% directory will be used.",
     )
-    group.add_argument(
-        "--uninstall",
-        action="store_true",
-        help="Uninstall ESET Internet Security.",
+    parser.add_argument(
+        "--language",
+        type=str,
+        default="english",
+        help="Language for the GUI of the installed product. Default is 'english'.",
     )
     parser.add_argument(
         "--force",
@@ -228,9 +264,11 @@ def _make_parser():
 def main(
         install: bool = False,
         installer_dir: str = None,
+        language: str = 'english',
         uninstall: bool = False,
         force: bool = False,
 ) -> int:
+    print(f"Selected language: {language}")
     if not install and not uninstall:
         printc("[!] You must specify either --install or --uninstall.", "red")
         return 1
@@ -239,7 +277,7 @@ def main(
         return 1
 
     if install:
-        return install_eset_internet_security(installer_dir, force)
+        return install_eset_internet_security(installer_dir, force, language)
     if uninstall:
         return uninstall_eset_internet_security(installer_dir, force)
 

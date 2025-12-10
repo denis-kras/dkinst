@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.2 - 10.12.2025
+  * Added language selection for Eset Internet Security installer.
 * 0.37.1 - 09.12.2025
   * Fixed Default language for Eset Internet Security installer.
 * 0.37.0 - 09.12.2025
