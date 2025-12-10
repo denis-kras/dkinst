@@ -251,9 +251,9 @@ def _run_dependencies(
 
         elif method == "upgrade":
             # On upgrade:
-            #   * if the dependency is installed, prefer its `upgrade` method
-            #     and fall back to `install` if needed.
-            #   * if the dependency is NOT installed, use `install`.
+            #   * if the dependency is installed, prefer its 'upgrade' method
+            #     and fall back to 'install' if needed.
+            #   * if the dependency is NOT installed, use 'instal'`.
             if is_installed:
                 if "upgrade" in known_methods:
                     dep_method_name = "upgrade"
@@ -344,12 +344,17 @@ def _require_admin_if_needed(
 
     if isinstance(admins, dict):
         methods_for_platform = admins.get(current_platform) or []
-        # Be tolerant: allow string or list
+        # Allow either string or list
         if isinstance(methods_for_platform, str):
             methods_for_platform = [methods_for_platform]
         methods_for_platform = [m.lower() for m in methods_for_platform]
 
         if method.lower() in methods_for_platform:
+            needs_admin = True
+
+    elif isinstance(admins, (list, tuple, set)):
+        # Legacy style: list of platforms where all methods need admin
+        if current_platform in admins:
             needs_admin = True
     else:
         raise ValueError(f"installer.admins has unsupported type: {type(admins)}")
@@ -381,6 +386,7 @@ def _require_admin_if_needed(
             style='yellow',
         )
 
+    # If we’re still here, elevation failed or was cancelled
     return 1
 
 

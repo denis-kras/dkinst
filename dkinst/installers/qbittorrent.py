@@ -29,6 +29,10 @@ class QBitTorrent(_base.BaseInstaller):
         self.platforms: list = ["debian", "windows"]
         self.dependencies: list = ["chocolatey"]
 
+        self.admins: dict = {
+            "windows": ["install", "upgrade", "uninstall"]
+        }
+
     def install(
             self,
     ):

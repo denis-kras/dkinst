@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.4 - 10.12.2025
+  * Added admin for dependencies check.
 * 0.37.3 - 10.12.2025
   * Added Chocolatey uninstall method and fixed install.
 * 0.37.2 - 10.12.2025
