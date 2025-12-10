@@ -5,13 +5,17 @@ import shutil
 import subprocess
 import re
 import requests
+from pathlib import Path
+
+if os.name == "nt":
+    import winreg
 
 from .infra.printing import printc
-from .infra import permissions
+from .infra import permissions, registrys
 
 
-VERSION: str = "1.0.0"
-"""Initial"""
+VERSION: str = "1.1.0"
+"""Added uninstall and fixed install"""
 
 
 API_URL = "https://community.chocolatey.org/api/v2/package/chocolatey"
@@ -92,6 +96,44 @@ def get_choco_version_remote() -> str:
     return m.group(1)
 
 
+def _locate_choco_exe() -> str | None:
+    """
+    Best-effort locate choco.exe after installation.
+
+    Priority:
+      1. %ChocolateyInstall%\\bin
+      2. %ProgramData%\\chocolatey\\bin
+      3. Last resort: whatever shutil.which("choco") sees
+    """
+    candidates: list[str] = []
+
+    choco_install = os.environ.get("ChocolateyInstall")
+    if choco_install:
+        candidates.append(choco_install)
+
+    program_data = os.environ.get("ProgramData")
+    if program_data:
+        candidates.append(os.path.join(program_data, "chocolatey"))
+
+    # Deduplicate and check bin\choco.exe
+    seen: set[str] = set()
+    for root in candidates:
+        if not root:
+            continue
+        root_norm = os.path.normpath(root)
+        key = root_norm.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        exe = os.path.join(root_norm, "bin", "choco.exe")
+        if os.path.isfile(exe):
+            return exe
+
+    # Last resort: current process PATH (may already be correct if PATH was set before)
+    exe = shutil.which("choco")
+    return exe
+
+
 def install_choco() -> int:
     """
     Install chocolatey using the official installation script.
@@ -163,6 +205,10 @@ def install_choco() -> int:
         "Open a new shell and run `choco --version` to confirm.",
         color="green",
     )
+
+    choco_dir: str = str(Path(_locate_choco_exe()).parent)
+    os.environ["PATH"] = choco_dir + os.pathsep + os.environ.get("PATH", "")
+
     return 0
 
 
@@ -208,6 +254,230 @@ def compare_local_and_remote_versions() -> int:
         return 1
 
 
+def uninstall_choco() -> int:
+    """
+    Uninstall Chocolatey by removing its bin folder and Chocolatey-related
+    environment variables/PATH entries.
+
+    This does NOT uninstall or remove applications that were installed via
+    Chocolatey; it only removes the CLI and its environment wiring.
+    """
+    # Safety: only meaningful on Windows with winreg available
+    if os.name != "nt" or winreg is None:
+        printc("Chocolatey uninstall is only supported on Windows.", color="red")
+        return 1
+
+    # Environment variable names commonly used by Chocolatey
+    CHOCOLATEY_ENV_VARS = [
+        "ChocolateyInstall",
+        "ChocolateyToolsLocation",
+        "ChocolateyBinRoot",
+        "ChocolateyLastPathUpdate",
+    ]
+
+    def _clean_path_value(path_value: str | None) -> str | None:
+        """
+        Remove any PATH segments that reference 'chocolatey' (case-insensitive).
+        """
+        if not path_value:
+            return path_value
+
+        parts = [p for p in path_value.split(";") if p]
+        cleaned_parts = [
+            p for p in parts
+            if "chocolatey" not in p.lower()
+        ]
+        return ";".join(cleaned_parts)
+
+    def _clean_registry_env(root, subkey: str, scope_name: str) -> bool:
+        """
+        Remove Chocolatey env vars and PATH entries from a given registry key.
+
+        Returns:
+            had_error (bool): True if any permission/registry write error occurred.
+        """
+        access = winreg.KEY_READ | winreg.KEY_WRITE
+        if hasattr(winreg, "KEY_WOW64_64KEY"):
+            access |= winreg.KEY_WOW64_64KEY
+
+        try:
+            key = winreg.OpenKey(root, subkey, 0, access)
+        except FileNotFoundError:
+            # No environment key in this hive; nothing to do.
+            print(f"[INFO] Registry environment key not found for {scope_name} scope.")
+            return False
+        except PermissionError as exc:
+            printc(
+                f"Insufficient permissions to modify {scope_name} environment: {exc}",
+                color="yellow",
+            )
+            return True
+
+        had_error = False
+
+        with key:
+            # Remove Chocolatey-specific environment variables
+            for name in CHOCOLATEY_ENV_VARS:
+                try:
+                    winreg.DeleteValue(key, name)
+                    printc(
+                        f"Removed {scope_name} environment variable: {name}",
+                        color="green",
+                    )
+                except FileNotFoundError:
+                    # Not present; ignore
+                    pass
+                except PermissionError as exc:
+                    had_error = True
+                    printc(
+                        f"Could not remove {scope_name} environment variable {name}: {exc}",
+                        color="yellow",
+                    )
+
+            # Clean PATH for this scope
+            try:
+                current_path, value_type = winreg.QueryValueEx(key, "Path")
+            except FileNotFoundError:
+                current_path, value_type = None, None
+
+            if current_path is not None:
+                new_path = _clean_path_value(current_path)
+                if new_path != current_path:
+                    try:
+                        winreg.SetValueEx(key, "Path", 0, value_type, new_path)
+                        printc(
+                            f"Cleaned Chocolatey entries from {scope_name} PATH.",
+                            color="green",
+                        )
+                    except PermissionError as exc:
+                        had_error = True
+                        printc(
+                            f"Could not update {scope_name} PATH: {exc}",
+                            color="yellow",
+                        )
+
+        return had_error
+
+    printc(
+        "Uninstalling Chocolatey: removing bin folder and environment variables "
+        "(installed packages will remain).",
+        color="blue",
+    )
+
+    # 1. Remove the bin folder under %ChocolateyInstall%, if we can resolve it
+    choco_root = os.environ.get("ChocolateyInstall", "").strip().strip('"')
+    if choco_root and os.path.isdir(choco_root):
+        bin_dir = os.path.join(choco_root, "bin")
+        # Remove the whole chocolatey directory.
+        choco_dir: str = os.path.dirname(bin_dir)
+        if os.path.isdir(choco_dir):
+            try:
+                shutil.rmtree(choco_dir)
+                printc(f"Removed Chocolatey bin directory: {choco_dir}", color="green")
+            except Exception as exc:
+                # Non-fatal; we still proceed with env cleanup
+                printc(
+                    f"Failed to remove Chocolatey bin directory '{choco_dir}': {exc}",
+                    color="yellow",
+                )
+        else:
+            printc(
+                f"Chocolatey bin directory does not exist: {choco_dir}",
+                color="yellow",
+            )
+    else:
+        printc(
+            "Environment variable 'ChocolateyInstall' is not set or does not point to "
+            "an existing directory. Skipping bin directory removal.",
+            color="yellow",
+        )
+
+    # Trying to remove common installation folder if exists
+    common_choco_path = r"C:\ProgramData\chocolatey"
+    if os.path.isdir(common_choco_path):
+        try:
+            shutil.rmtree(common_choco_path)
+            printc(f"Removed common Chocolatey installation directory: {common_choco_path}", color="green")
+        except Exception as exc:
+            # Non-fatal; we still proceed with env cleanup
+            printc(
+                f"Failed to remove common Chocolatey installation directory '{common_choco_path}': {exc}",
+                color="yellow",
+            )
+    else:
+        printc(
+            f"Common Chocolatey installation directory does not exist: {common_choco_path}",
+            color="yellow",
+        )
+
+    # 2. Clean system and user environment in the registry
+    had_errors = False
+
+    # System-wide env (requires admin to fully succeed)
+    had_errors = _clean_registry_env(
+        winreg.HKEY_LOCAL_MACHINE,
+        r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+        "system",
+    ) or had_errors
+
+    # User env (no admin required)
+    had_errors = _clean_registry_env(
+        winreg.HKEY_CURRENT_USER,
+        r"Environment",
+        "user",
+    ) or had_errors
+
+    # 3. Clean current process environment so the running shell reflects changes immediately
+    for name in CHOCOLATEY_ENV_VARS:
+        if name in os.environ:
+            os.environ.pop(name, None)
+            printc(f"Removed process environment variable: {name}", color="green")
+
+    process_path = os.environ.get("PATH", "")
+    new_process_path = _clean_path_value(process_path)
+    if new_process_path is not None and new_process_path != process_path:
+        os.environ["PATH"] = new_process_path
+        printc(
+            "Cleaned Chocolatey entries from current process PATH.",
+            color="green",
+        )
+
+    # 4. Broadcast environment change using your existing helper
+    try:
+        if hasattr(registrys, "_broadcast_env_change"):
+            # Use the same pattern as inside registrys.py
+            registrys._broadcast_env_change(registrys.ctypes)  # type: ignore[attr-defined]
+            printc("Broadcasted environment change.", color="green")
+        else:
+            printc(
+                "registrys._broadcast_env_change not available; "
+                "environment changes will apply to new logon sessions.",
+                color="yellow",
+            )
+    except Exception as exc:
+        had_errors = True
+        printc(
+            f"Failed to broadcast environment change: {exc}",
+            color="yellow",
+        )
+
+    if had_errors:
+        printc(
+            "Chocolatey uninstall completed with some warnings. "
+            "You may want to double-check PATH and environment variables manually.",
+            color="yellow",
+        )
+        # Treat as overall success for CLI purposes; warnings are already printed.
+        return 0
+
+    printc(
+        "Chocolatey uninstall completed successfully. "
+        "Open a new shell and run `choco` to confirm it is no longer available.",
+        color="green",
+    )
+    return 0
+
+
 def _make_parser():
     parser = argparse.ArgumentParser(description="Install Chocolatey.")
     parser.add_argument(
@@ -216,7 +486,12 @@ def _make_parser():
         help=f"Install the latest version of Chocolatey."
     )
     parser.add_argument(
-        '-u', '--upgrade',
+        '-un', '--uninstall',
+        action='store_true',
+        help=f"Uninstall Chocolatey."
+    )
+    parser.add_argument(
+        '-up', '--upgrade',
         action='store_true',
         help=f"Update Chocolatey to the latest version."
     )
@@ -247,17 +522,19 @@ def _make_parser():
 
 
 def main(
-    install: bool = False,
-    upgrade: bool = False,
-    version_local: bool = False,
-    version_remote: bool = False,
-    version_compare: bool = False,
-    force: bool = False,
+        install: bool = False,
+        uninstall: bool = False,
+        upgrade: bool = False,
+        version_local: bool = False,
+        version_remote: bool = False,
+        version_compare: bool = False,
+        force: bool = False,
 ) -> int:
     """
     The function will install Chocolatey on Windows.
 
     :param install: bool, If True, install Chocolatey.
+    :param uninstall: bool, If True, uninstall Chocolatey.
     :param upgrade: bool, If True, upgrade Chocolatey to the latest version.
     :param version_local: bool, If True, print the installed Chocolatey version.
     :param version_remote: bool, If True, print the latest Chocolatey version from the
@@ -267,11 +544,11 @@ def main(
     :return: int, Return code of the installation process. 0 if successful, non-zero otherwise.
     """
 
-    if (install + upgrade + version_local + version_remote + version_compare) == 0:
-        printc("At least one argument must be set to True: install, upgrade, version_local, version_remote, version_compare.", color="red")
+    if (install + uninstall + upgrade + version_local + version_remote + version_compare) == 0:
+        printc("At least one argument must be set to True: install, uninstall, upgrade, version_local, version_remote, version_compare.", color="red")
         return 1
-    if (install + upgrade + version_local + version_remote + version_compare) > 1:
-        printc("Only one of the arguments can be set to True: install, upgrade, version_local, version_remote, version_compare.", color="red")
+    if (install + uninstall + upgrade + version_local + version_remote + version_compare) > 1:
+        printc("Only one of the arguments can be set to True: install, uninstall, upgrade, version_local, version_remote, version_compare.", color="red")
         return 1
 
     if version_local:
@@ -302,6 +579,13 @@ def main(
             return 1
 
         rc: int = install_choco()
+        if rc != 0:
+            return rc
+        return 0
+
+    if uninstall:
+        # No need to check if 'choco' command exists; we can uninstall even if it's broken.
+        rc: int = uninstall_choco()
         if rc != 0:
             return rc
         return 0

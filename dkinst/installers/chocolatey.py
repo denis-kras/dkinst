@@ -16,7 +16,7 @@ class Chocolatey(_base.BaseInstaller):
         self.helper: ModuleType = chocolatey_installer
 
         self.admins: dict = {
-            "windows": ["install", "upgrade"]
+            "windows": ["install", "upgrade", "uninstall"]
         }
 
     def install(
@@ -28,6 +28,11 @@ class Chocolatey(_base.BaseInstaller):
             self,
     ):
         return chocolatey_installer.main(upgrade=True)
+
+    def uninstall(
+            self
+    ):
+        return chocolatey_installer.main(uninstall=True)
 
     def is_installed(self) -> bool:
         return chocolatey_installer.is_choco_installed()
@@ -43,5 +48,10 @@ class Chocolatey(_base.BaseInstaller):
             print(method_help)
         elif method == "upgrade":
             print("Uses Chocolatey to upgrade itself.")
+        elif method == "uninstall":
+            method_help: str = (
+                "This method uninstalls Chocolatey by removing its installation folder and environment variables.\n"
+            )
+            print(method_help)
         else:
             raise ValueError(f"Unknown method '{method}'.")
