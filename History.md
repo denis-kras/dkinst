@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.5 - 10.12.2025
+  * Fixed Eset installer.
 * 0.37.4 - 10.12.2025
   * Added admin for dependencies check.
 * 0.37.3 - 10.12.2025

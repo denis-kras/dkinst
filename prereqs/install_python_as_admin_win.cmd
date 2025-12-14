@@ -71,7 +71,7 @@ if "%LATEST_VERSION%"=="" (
 )
 
 :Finalize
-set "TARGET_DIR=C:\Python%LATEST_VERSION:.=%"
+set "TARGET_DIR=C:\Python%PYTHON_MAJOR_MINOR:.=%"
 echo TARGET INSTALLATION DIR: %TARGET_DIR%
 
 rem Download the Python installer for the determined version

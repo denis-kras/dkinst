@@ -178,15 +178,14 @@ def uninstall_eset_internet_security(
 
     os.makedirs(installer_dir, exist_ok=True)
 
-    # --- Take snapshot of msedge.exe BEFORE uninstall ---
-    # --- Snapshots before uninstall ---
-    old_msedge_procs = win_open_windows.get_msedge_snapshot()
-    old_msedge_windows = win_open_windows.get_msedge_window_handles()
+    # --- Take snapshot of processes + windows BEFORE uninstall ---
+    old_proc_snapshot = win_open_windows.get_process_snapshot()
+    old_window_handles = win_open_windows.get_window_handles_snapshot()
 
-    if old_msedge_procs:
-        print(f"[+] Existing msedge.exe PIDs before uninstall: {sorted(old_msedge_procs.keys())}")
+    if old_proc_snapshot:
+        print(f"[+] Existing PIDs before uninstall: {sorted(old_proc_snapshot.keys())}")
     else:
-        print("[+] No msedge.exe processes running before uninstall.")
+        print("[+] No processes running before uninstall.")
 
     # Uninstallation with no intervention works only with /qb.
     # For some reason, /qn does asks for password, but even providing 'PASSWORD=""' does not work, and it returns 1603.
@@ -201,9 +200,22 @@ def uninstall_eset_internet_security(
         # additional_args='PRODUCT_LANG=1033 PRODUCT_LANG_CODE=en-us',
     )
 
-    # --- After uninstall, kill only NEW msedge.exe processes ---
-    win_open_windows.kill_new_msedge_processes(old_msedge_procs, wait_seconds=5.0)
-    win_open_windows.close_new_msedge_windows(old_msedge_windows, wait_seconds=5.0)
+    # --- After uninstall, close any NEW windows and kill only NEW processes ---
+    new_windows = win_open_windows.close_new_windows(old_window_handles, wait_seconds=5.0)
+
+    new_pids = {int(w["pid"]) for w in new_windows if w.get("pid") is not None}
+    new_exes = {
+        str(w.get("exe") or "").lower()
+        for w in new_windows
+        if str(w.get("exe") or "").strip().lower() not in ("", "unknown")
+    }
+
+    win_open_windows.kill_new_processes(
+        old_proc_snapshot,
+        wait_seconds=5.0,
+        include_pids=new_pids if new_pids else None,
+        include_names=new_exes if new_exes else None,
+    )
 
     # 0    = success
     # 3010 = success, reboot required
