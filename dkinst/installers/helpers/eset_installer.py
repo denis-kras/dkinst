@@ -151,22 +151,20 @@ def uninstall_eset_internet_security(
 
     # inspect/handle currently open windows
     open_windows = win_open_windows.get_open_windows()
+    win_open_windows.print_open_windows(open_windows)
     if force:
         if open_windows:
             printc("[!] --force specified. Closing all currently open windows before uninstall.", "yellow")
-            win_open_windows.print_open_windows(open_windows)
             win_open_windows.close_windows(open_windows)
         else:
             print("[+] No windows to close in force mode.")
     else:
         # Just show them and tell the user they must close them
-        win_open_windows.print_open_windows(open_windows)
         if open_windows:
             printc(
-                "[!] Please save your work and close these windows, then run uninstall again or use the '--force' argument for script to close the windows for you.\n",
+                "[!] MSIEXEC could prompt you to close the windows or ignore, you can skip it by using the 'force' argument for script to close the windows for you.\n",
                 "yellow",
             )
-            return 1
 
     uninstall_string = _find_eset_uninstall_string()
     if not uninstall_string:
