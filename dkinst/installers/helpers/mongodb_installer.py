@@ -194,8 +194,9 @@ def install_mongodb_win(
 
         print("Installing MongoDB...")
         try:
-            msis.install_msi(
-                installer_file_path,
+            msis.run_msi(
+                install=True,
+                msi_path=installer_file_path,
                 silent_no_gui=True,
                 no_restart=True,
                 terminate_required_processes=True,

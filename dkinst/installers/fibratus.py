@@ -71,7 +71,7 @@ def install_function(
         exclude_string='slim')
 
     # Install the MSI file
-    msis.install_msi(msi_path=fibratus_setup_file_path, silent_progress_bar=True)
+    msis.run_msi(install=True, msi_path=fibratus_setup_file_path, silent_progress_bar=True)
 
     count = 0
     while count != WAIT_SECONDS_FOR_EXECUTABLE_TO_APPEAR_AFTER_INSTALLATION:

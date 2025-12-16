@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.7 - 16.12.2025
+  * Fixed msis references.
+  * Created pyswitch in Utils.
 * 0.37.5-6 - 10.12.2025
   * Fixed Eset installer.
 * 0.37.4 - 10.12.2025

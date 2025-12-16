@@ -196,7 +196,7 @@ def install_nodejs_win(
         console.print("Exiting: Failed to download the Node.js installer.", style="red")
         return 1
 
-    msis.install_msi(installer_path, silent_progress_bar=True)
+    msis.run_msi(install=True, msi_path=installer_path, silent_progress_bar=True)
     time.sleep(5)  # Wait a few seconds for the installation to complete
 
     try:
