@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.9 - 17.12.2025
+  * Fixed non-return code on dependencies.
 * 0.37.8 - 17.12.2025
   * Fixed exit on dependency errors in interactive mode.
   * Added GPU check in RDP GPU enabler.

@@ -310,20 +310,26 @@ def _run_dependencies(
         # Support installers that return either an int rc or a subprocess.CompletedProcess-like object.
         rc = getattr(result, "returncode", result)
         if rc is None:
-            rc = 0
-
-        try:
-            rc_int = int(rc)
-        except Exception:
-            rc_int = 1
-
-        if rc_int != 0:
             console.print(
-                f"Dependency [{dep_name}] failed with exit code {rc_int}. Aborting.",
+                f"Dependency [{dep_name}] command did not return an exit code.",
                 style="red",
                 markup=False,
             )
-            return rc_int, done
+            return 1, done
+        if not isinstance(rc, int):
+            console.print(
+                f"Dependency [{dep_name}] command returned invalid exit code: {rc!r}",
+                style="red",
+                markup=False,
+            )
+            return 1, done
+        if rc != 0:
+            console.print(
+                f"Dependency [{dep_name}] Command failed with exit code {rc}. Exiting.",
+                style="red",
+                markup=False,
+            )
+            return rc, done
 
         done.add(dep_name)
 
@@ -465,6 +471,20 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
                 continue
 
             rc = _dispatch(namespace, parser)
+            if rc is None:
+                console.print(
+                    "Internal error: command did not return an exit code.",
+                    style="red",
+                    markup=False,
+                )
+                return 1
+            if not isinstance(rc, int):
+                console.print(
+                    f"Internal error: command returned invalid exit code: {rc!r}",
+                    style="red",
+                    markup=False,
+                )
+                return 1
             if rc != 0:
                 console.print(
                     f"Command failed with exit code {rc}. Exiting.",
@@ -504,6 +524,20 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
                 continue
 
             rc = _dispatch(namespace, parser)
+            if rc is None:
+                console.print(
+                    "Internal error: command did not return an exit code.",
+                    style="red",
+                    markup=False,
+                )
+                return 1
+            if not isinstance(rc, int):
+                console.print(
+                    f"Internal error: command returned invalid exit code: {rc!r}",
+                    style="red",
+                    markup=False,
+                )
+                return 1
             if rc != 0:
                 console.print(
                     f"Command failed with exit code {rc}. Exiting.",
