@@ -305,9 +305,25 @@ def _run_dependencies(
         )
 
         dep_func = getattr(dep_inst, dep_method_name)
-        rc = dep_func()
-        if rc not in (0, None):
-            return rc, done
+        result = dep_func()
+
+        # Support installers that return either an int rc or a subprocess.CompletedProcess-like object.
+        rc = getattr(result, "returncode", result)
+        if rc is None:
+            rc = 0
+
+        try:
+            rc_int = int(rc)
+        except Exception:
+            rc_int = 1
+
+        if rc_int != 0:
+            console.print(
+                f"Dependency [{dep_name}] failed with exit code {rc_int}. Aborting.",
+                style="red",
+                markup=False,
+            )
+            return rc_int, done
 
         done.add(dep_name)
 
@@ -448,7 +464,14 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
             except SystemExit:
                 continue
 
-            _dispatch(namespace, parser)
+            rc = _dispatch(namespace, parser)
+            if rc != 0:
+                console.print(
+                    f"Command failed with exit code {rc}. Exiting.",
+                    style="red",
+                    markup=False,
+                )
+                return rc
     else:
         # Fallback: no prompt_toolkit installed, just a plain prompt
         console.print(
@@ -480,7 +503,14 @@ def _interactive_console(parser: argparse.ArgumentParser) -> int:
             except SystemExit:
                 continue
 
-            _dispatch(namespace, parser)
+            rc = _dispatch(namespace, parser)
+            if rc != 0:
+                console.print(
+                    f"Command failed with exit code {rc}. Exiting.",
+                    style="red",
+                    markup=False,
+                )
+                return rc
 
     console.print("[bold]Bye![/bold]")
     return 0

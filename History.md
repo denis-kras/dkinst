@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.8 - 17.12.2025
+  * Fixed exit on dependency errors in interactive mode.
+  * Added GPU check in RDP GPU enabler.
 * 0.37.7 - 16.12.2025
   * Fixed msis references.
   * Created pyswitch in Utils.
