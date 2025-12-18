@@ -26,7 +26,7 @@ class Fibratus(_base.BaseInstaller):
 
     def install(
             self
-    ):
+    ) -> int:
         return install_function()
 
     def _show_help(

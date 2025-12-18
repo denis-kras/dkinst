@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Literal
 
 from rich.console import Console
@@ -35,17 +34,17 @@ class QBitTorrent(_base.BaseInstaller):
 
     def install(
             self,
-    ):
+    ) -> int:
         return install_function()
 
     def upgrade(
             self,
-    ):
+    ) -> int:
         return upgrade_function()
 
     def uninstall(
             self
-    ):
+    ) -> int:
         return uninstall_function()
 
     def _show_help(

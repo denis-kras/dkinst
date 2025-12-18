@@ -21,17 +21,17 @@ class Chocolatey(_base.BaseInstaller):
 
     def install(
             self,
-    ):
+    ) -> int:
         return chocolatey_installer.main(install=True)
 
     def upgrade(
             self,
-    ):
+    ) -> int:
         return chocolatey_installer.main(upgrade=True)
 
     def uninstall(
             self
-    ):
+    ) -> int:
         return chocolatey_installer.main(uninstall=True)
 
     def is_installed(self) -> bool:

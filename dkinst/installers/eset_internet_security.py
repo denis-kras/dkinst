@@ -25,13 +25,13 @@ class QTorrent(_base.BaseInstaller):
             self,
             force: bool = False,
             language: str = "english"
-    ):
+    ) -> int:
         return eset_installer.main(install=True, installer_dir=self.dir_path, language=language, force=force)
 
     def uninstall(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return eset_installer.main(uninstall=True, installer_dir=self.dir_path, force=force)
 
     def _show_help(

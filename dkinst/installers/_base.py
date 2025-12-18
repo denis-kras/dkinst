@@ -49,13 +49,13 @@ class BaseInstaller:
         self.dir_path: str = str(Path(self.base_path) / self.name)
         self.exe_path: str | None = None  # Path to the main executable of the installed application, if applicable. Example: Path(self.dir_path) / "app.exe"
 
-    def install(self):
+    def install(self) -> int:
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def uninstall(self):
+    def uninstall(self) -> int:
         raise NotImplementedError("Method not implemented by the subclass. Uninstall manually.")
 
-    def upgrade(self):
+    def upgrade(self) -> int:
         raise NotImplementedError("Method not implemented by the subclass. Upgrade manually.")
 
     def is_installed(self) -> bool:

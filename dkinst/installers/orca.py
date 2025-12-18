@@ -24,18 +24,21 @@ class Orca(_base.BaseInstaller):
 
     def install(
             self,
-    ):
-        return chocos.install_package(CHOCO_PACKAGE_NAME)
+    ) -> int:
+        rc, message = chocos.install_package(CHOCO_PACKAGE_NAME)
+        return rc
 
     def upgrade(
             self,
-    ):
-        return chocos.upgrade_package(CHOCO_PACKAGE_NAME)
+    ) -> int:
+        rc, message = chocos.upgrade_package(CHOCO_PACKAGE_NAME)
+        return rc
 
     def uninstall(
             self
-    ):
-        return chocos.uninstall_package(CHOCO_PACKAGE_NAME)
+    ) -> int:
+        rc, message = chocos.uninstall_package(CHOCO_PACKAGE_NAME)
+        return rc
 
     def _show_help(
             self,

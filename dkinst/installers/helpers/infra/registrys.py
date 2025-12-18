@@ -129,7 +129,7 @@ def ensure_exe_dir_in_path(
     position: Literal["front", "end"] = "end",              # 'end' or 'front' (where to put the new dir)
     require_existence: bool = True      # verify the exe actually exists
 ):
-    """
+    r"""
     Ensure PATH has exactly one directory providing the given executable:
       - If any PATH entry currently provides an exe with the same filename, replace those entries with `dir(exe_path)`
       - Otherwise, append (or prepend) the new directory
@@ -286,7 +286,7 @@ def set_environment_variable(
     expand_for_process: bool = True,    # expand %VARS% for *current* process env only
     broadcast: bool = True              # send WM_SETTINGCHANGE after writing registry
 ) -> dict:
-    """
+    r"""
     Set an environment variable persistently (User or Machine) and update the current process.
 
     :param name: Name of the environment variable (e.g. 'Path' or 'MyVar').

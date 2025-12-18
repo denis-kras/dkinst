@@ -23,25 +23,40 @@ class Robocorp(_base.BaseInstaller):
             "windows": ["install", "upgrade"]
         }
 
-    def install(self):
+    def install(self) -> int:
         console.print("PIP Installing Robocorp.", style="blue")
-        subprocess.check_call(["pip", "install", "--upgrade", "rpaframework"])
+        rc: int = subprocess.call(["pip", "install", "--upgrade", "rpaframework"])
+        if rc != 0:
+            console.print("Failed to install Robocorp Framework.", style="red")
+            return rc
 
         console.print("PIP Installing Robocorp-Browser.", style="blue")
-        subprocess.check_call(["pip", "install", "--upgrade", "robotframework-browser"])
+        rc: int = subprocess.call(["pip", "install", "--upgrade", "robotframework-browser"])
+        if rc != 0:
+            console.print("Failed to install Robocorp Browser.", style="red")
+            return rc
 
         console.print("PIP Installing Robocorp-Recognition.", style="blue")
-        subprocess.check_call(["pip", "install", "--upgrade", "rpaframework-recognition"])
+        rc: int = subprocess.call(["pip", "install", "--upgrade", "rpaframework-recognition"])
+        if rc != 0:
+            console.print("Failed to install Robocorp Recognition.", style="red")
+            return rc
 
         console.print("Initializing Robocorp Browser.", style="blue")
-        subprocess.check_call(["rfbrowser", "init"])
+        rc: int = subprocess.call(["rfbrowser", "init"])
+        if rc != 0:
+            console.print("Failed to initialize Robocorp Browser.", style="red")
+            return rc
 
         # Robocorp browser init already installs the browsers.
         # console.print("Installing Playwright browsers.", style="blue")
         # subprocess.check_call(["playwright", "install"])
 
         console.print("Installing Additional modules.", style="blue")
-        subprocess.check_call(["pip", "install", "--upgrade", "matplotlib", "imagehash", "pynput", "pyautogui"])
+        rc: int = subprocess.call(["pip", "install", "--upgrade", "matplotlib", "imagehash", "pynput", "pyautogui"])
+        if rc != 0:
+            console.print("Failed to install additional modules.", style="red")
+            return rc
 
         # Patch robocorp: Remove mouse to the center of the screen on control command.
         # Import the library to find its path.
@@ -66,8 +81,8 @@ class Robocorp(_base.BaseInstaller):
     def upgrade(
             self,
             force: bool = False
-    ):
-        self.install()
+    ) -> int:
+        return self.install()
 
     def _show_help(
             self,

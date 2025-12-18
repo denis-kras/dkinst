@@ -16,7 +16,7 @@ class Docker(_base.BaseInstaller):
 
     def install(
             self,
-    ):
+    ) -> int:
         return docker_installer.main(install=True, add_user_to_docker_group=True)
 
     def _show_help(

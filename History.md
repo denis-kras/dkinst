@@ -1,8 +1,10 @@
 <!-- HISTORY -->
 ## History
 
-* 0.37.9 - 17.12.2025
+* 0.37.9-11 - 17.12.2025
   * Fixed non-return code on dependencies.
+  * Disabled RDP GPU enabler check.
+  * Fixed git installer install/uninstall methods.
 * 0.37.8 - 17.12.2025
   * Fixed exit on dependency errors in interactive mode.
   * Added GPU check in RDP GPU enabler.

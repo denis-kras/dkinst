@@ -23,7 +23,7 @@ class BashDB(_base.BaseInstaller):
 
     def install(
             self,
-    ):
+    ) -> int:
         return install_bashdb()
 
     def _show_help(

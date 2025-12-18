@@ -24,7 +24,7 @@ class Brew(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return install_brew()
 
     def is_installed(self) -> bool:

@@ -156,12 +156,12 @@ def compile_exe(
     if not VCPKG_DIR.exists():
         run(f'git clone https://github.com/microsoft/vcpkg "{VCPKG_DIR}"')
     else:
-        console.print(f"vcpkg exists in [{VCPKG_DIR}]. Updating...", style="blue")
+        console.print(f"vcpkg exists in [{VCPKG_DIR}]. Updating...", style="cyan")
         run(f'git -C "{VCPKG_DIR}" pull')
     run(f'"{VCPKG_DIR / "bootstrap-vcpkg.bat"}"')
 
     vcpkg = VCPKG_DIR / "vcpkg.exe"
-    console.print(f"Creating {PORT} port in vcpkg...", style="blue")
+    console.print(f"Creating {PORT} port in vcpkg...", style="cyan")
     # run(f'"{vcpkg}" install {PORT} --disable-metrics')        # minimal, no dependencies.
     run(f'"{vcpkg}" install ' + ' '.join(DEPENDENCIES) + ' --disable-metrics --recurse')
     run(f'"{vcpkg}" integrate install --disable-metrics')

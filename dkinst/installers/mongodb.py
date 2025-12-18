@@ -26,8 +26,8 @@ class MongoDB(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
-        mongodb_installer.main(
+    ) -> int:
+        return mongodb_installer.main(
             latest=True,
             compass=True,
             force=force

@@ -21,7 +21,7 @@ class Krusader(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return install_krusader()
 
     def _show_help(

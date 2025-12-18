@@ -17,7 +17,7 @@ class VLC(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return vs_build_tools_installer.main(install=True, force=force)
 
     def is_installed(self) -> bool:

@@ -21,8 +21,8 @@ class ElasticElasticsearch(_base.BaseInstaller):
 
     def install(
             self,
-    ):
-        elastic_manager.main(install_search=True)
+    ) -> int:
+        return elastic_manager.main(install_search=True)
 
     def _show_help(
             self,

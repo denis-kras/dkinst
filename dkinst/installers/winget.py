@@ -21,7 +21,7 @@ class PyCharm(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         rc: int = winget_installer.main(install_ps_module=True, force=force)
         if rc != 0:
             console.print('=============================', style='red')
@@ -39,7 +39,7 @@ class PyCharm(_base.BaseInstaller):
 
         return 0
 
-    def upgrade(self):
+    def upgrade(self) -> int:
         print("Currently, Windows should handle Winget upgrades, but you can run the install command again to ensure you have the latest version.")
         return 0
 

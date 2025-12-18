@@ -19,7 +19,7 @@ class PBTK(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return install_function(target_directory=self.dir_path)
 
     def _show_help(

@@ -16,8 +16,8 @@ class WSL(_base.BaseInstaller):
 
     def install(
             self,
-    ):
-        wsl_manager.main(
+    ) -> int:
+        return wsl_manager.main(
             install=True
         )
 

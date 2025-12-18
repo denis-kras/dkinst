@@ -21,12 +21,12 @@ class FFMPEG(_base.BaseInstaller):
 
     def install(
             self,
-    ):
+    ) -> int:
         return ffmpeg_manager.main(install_full_winget=True)
 
     def uninstall(
             self,
-    ):
+    ) -> int:
         return ffmpeg_manager.main(uninstall_full_winget=True)
 
     def _show_help(

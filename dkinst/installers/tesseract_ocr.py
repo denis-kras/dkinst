@@ -15,20 +15,20 @@ class TesseractOCR(_base.BaseInstaller):
         self.platforms: list = ["windows"]
         self.helper: ModuleType = tesseract_ocr_manager
 
-        self.dependencies: list[str] = ['vs_build_tools_2022']
+        self.dependencies: list[str] = ['vs_build_tools_2022', 'git']
 
         self.exe_path: str = str(Path(self.dir_path) / "tesseract.exe")
 
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return install_function(exe_path=self.exe_path, force=force)
 
     def upgrade(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return self.install(force=force)
 
     def is_installed(self) -> bool:
@@ -70,18 +70,22 @@ def install_function(
         exe_path: str,
         force: bool = False
 ) -> int:
-    tesseract_ocr_manager.main(
+    rc: int = tesseract_ocr_manager.main(
         compile_portable=True,
         set_path=True,
         exe_path=exe_path,
         force=force
     )
+    if rc != 0:
+        return rc
 
-    tesseract_ocr_manager.main(
+    rc: int = tesseract_ocr_manager.main(
         languages='f',
         lang_download=['eng', 'osd'],
         download_configs=True
     )
+    if rc != 0:
+        return rc
 
     # Remove duplicate config files from tessdata folder.
     files_list: list[str] = [

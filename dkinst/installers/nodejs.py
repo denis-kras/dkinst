@@ -23,8 +23,8 @@ class NodeJS(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
-        nodejs_installer.main(
+    ) -> int:
+        return nodejs_installer.main(
             latest=True,
             force=force
         )

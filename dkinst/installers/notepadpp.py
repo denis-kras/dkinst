@@ -25,7 +25,7 @@ class NotepadPP(_base.BaseInstaller):
     def install(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return winget_fallback_choco.method_package(
             method="install",
             winget_package_id=WINGET_PACKAGE_ID,
@@ -36,7 +36,7 @@ class NotepadPP(_base.BaseInstaller):
     def upgrade(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return winget_fallback_choco.method_package(
             method="upgrade",
             winget_package_id=WINGET_PACKAGE_ID,
@@ -47,7 +47,7 @@ class NotepadPP(_base.BaseInstaller):
     def uninstall(
             self,
             force: bool = False
-    ):
+    ) -> int:
         return winget_fallback_choco.method_package(
             method="upgrade",
             winget_package_id=WINGET_PACKAGE_ID,

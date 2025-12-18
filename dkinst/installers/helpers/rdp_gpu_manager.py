@@ -24,7 +24,12 @@ import json
 
 from .infra import permissions, registrys
 
+from rich.console import Console
+
 Action = Literal["enable", "disable", "default"] | None
+
+
+console = Console()
 
 
 SCRIPT_NAME: str = "Windows RDP GPU Driver Manager"
@@ -192,158 +197,204 @@ def restart_rdp_termservice_service(
 
 
 def check_gpu_enabled_in_current_rdp_session(verbose: bool = False) -> bool:
-    """
-    Best-effort runtime verification that the *current session* is actually using GPU acceleration.
+    r"""
+    Best-effort runtime verification that the "current RDP session" is actually using GPU acceleration.
 
-    Notes:
-      - This is intentionally heuristic: the registry tells you what's configured, not what the
-        current interactive session is doing.
-      - We query the Windows GPU Performance Counters (the same data source Task Manager uses)
-        via PowerShell's Get-Counter, scoped to the per-session DWM (dwm.exe) process.
+    What it does:
+      - Detect current Windows Session ID.
+      - Detect whether this is an RDP session (SESSIONNAME / GetSystemMetrics / GlassSessionId fallback).
+      - Reads relevant RDS policy backing values from:
+          HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
+      - Queries GPU performance counters (same source as Task Manager) for per-session dwm.exe via PowerShell:
+          \GPU Process Memory(pid_<dwmPid>*)\Local Usage
+          \GPU Engine(pid_<dwmPid>*engtype_3D)\Utilization Percentage
+
+    Interpretation (conservative):
+      - "GPU memory usage" alone is NOT treated as proof of GPU acceleration.
+      - We treat *observed non-trivial 3D utilization* (max over a few samples) as the strongest signal.
 
     Returns:
-        True if the check suggests GPU rendering is active in this session, otherwise False.
+        True  -> observed GPU 3D activity in this session.
+        False -> not observed / unsupported / inconclusive.
     """
-    if os.name != "nt":
-        print("Session GPU check is only supported on Windows.", file=sys.stderr)
-        return False
 
-    # Session ID (needed both for detecting remote-ness and for finding the correct per-session dwm.exe).
-    session_id = None
-    try:
-        sess = ctypes.c_uint()
-        if ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(sess)):
-            session_id = int(sess.value)
-    except Exception:
-        session_id = None
+    console.print(
+        "Unfortunately this method can state that GPU is working even if the setting is disabled and you start a GPU benchmark, so it is here only for a reference and is disabled.",
+        style="red",
+    )
+    return False
 
-    if session_id is None:
-        print("Could not determine current Windows session id.", file=sys.stderr)
-        return False
+    # ----------------- Local helpers (no external references) -----------------
 
-    # Heuristic: are we in an RDP session?
-    session_name = os.environ.get("SESSIONNAME", "")
-    in_rdp = session_name.upper().startswith("RDP-TCP")
+    def _format_mb(num_bytes: float | int) -> str:
+        try:
+            return f"{float(num_bytes) / (1024.0 * 1024.0):.2f} MB"
+        except Exception:
+            return "<unavailable>"
 
-    if not in_rdp:
-        # Fallback 1: GetSystemMetrics(SM_REMOTESESSION) is the classic method, but can be unreliable
-        # on Windows 8+/Server 2012+ when RemoteFX vGPU improvements are in play.
+    def _get_session_id() -> int | None:
+        try:
+            sess = ctypes.c_uint()
+            ok = ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(sess))
+            if ok:
+                return int(sess.value)
+        except Exception:
+            pass
+        return None
+
+    def _detect_rdp_session(session_id: int, session_name: str) -> bool:
+        # Primary heuristic: environment variable set by RDP
+        if session_name.upper().startswith("RDP-TCP"):
+            return True
+
+        # Fallback 1: GetSystemMetrics(SM_REMOTESESSION)
         try:
             SM_REMOTESESSION = 0x1000
-            in_rdp = bool(ctypes.windll.user32.GetSystemMetrics(SM_REMOTESESSION))
+            if bool(ctypes.windll.user32.GetSystemMetrics(SM_REMOTESESSION)):
+                return True
         except Exception:
-            in_rdp = False
+            pass
 
-    if not in_rdp:
-        # Fallback 2: GlassSessionId (per Microsoft guidance) is a more reliable discriminator in some cases.
+        # Fallback 2: GlassSessionId comparison (Windows guidance in some RDS scenarios)
         try:
-            import winreg  # stdlib (Windows-only)
+            import winreg  # stdlib, Windows-only
 
             with winreg.OpenKey(
                 winreg.HKEY_LOCAL_MACHINE,
-                r"SYSTEM\\CurrentControlSet\\Control\\Terminal Server",
+                r"SYSTEM\CurrentControlSet\Control\Terminal Server",
                 0,
                 winreg.KEY_READ,
             ) as k:
                 glass_session_id, _ = winreg.QueryValueEx(k, "GlassSessionId")
-            in_rdp = int(glass_session_id) != int(session_id)
+            return int(glass_session_id) != int(session_id)
         except Exception:
-            pass
+            return False
+
+    def _run_powershell(script: str) -> tuple[bool, str]:
+        """
+        Returns: (ok, stdout_or_error_text)
+        """
+        for exe in ("powershell", "pwsh"):
+            try:
+                result = subprocess.run(
+                    [exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                return True, (result.stdout or "").strip()
+            except FileNotFoundError:
+                continue
+            except subprocess.CalledProcessError as e:
+                return False, (e.stdout or "").strip()
+        return False, "PowerShell executable not found (powershell/pwsh)."
+
+    def _safe_json_loads(text: str) -> dict:
+        try:
+            obj = json.loads(text)
+            return obj if isinstance(obj, dict) else {}
+        except Exception:
+            return {}
+
+    # ----------------- Main logic -----------------
+
+    if os.name != "nt":
+        print("Session GPU check is only supported on Windows.", file=sys.stderr)
+        return False
+
+    session_id = _get_session_id()
+    if session_id is None:
+        print("Could not determine current Windows session id.", file=sys.stderr)
+        return False
+
+    session_name = os.environ.get("SESSIONNAME", "") or ""
+    in_rdp = _detect_rdp_session(session_id, session_name)
 
     if verbose:
         print(f"SESSIONNAME: {session_name!r}")
         print(f"Session ID: {session_id}")
         print(f"Remote session detected: {in_rdp}")
 
-    # Include the configured policy values as context.
+    # Read configured policy values (intent/config).
     gpu_policy = registrys.get_policy_dword("bEnumerateHWBeforeSW", TERMINAL_SERVICES_KEY, "HKLM")
     wddm_policy = registrys.get_policy_dword("fEnableWddmDriver", TERMINAL_SERVICES_KEY, "HKLM")
 
-    # Ask PowerShell for DWM PID in this session and query GPU perf counters for that PID.
-    ps_script = r"""
+    # PowerShell script: find dwm.exe in this session, then query GPU counters for that PID.
+    # IMPORTANT: counter paths must start with a SINGLE "\" (local machine). "\\..." is a remote machine path.
+    ps_template = r"""
 $ErrorActionPreference = 'Stop'
-$sess = {session_id}
-$dwm = Get-Process dwm -ErrorAction SilentlyContinue | Where-Object {{ $_.SessionId -eq $sess }} | Select-Object -First 1
-if (-not $dwm) {{
-  @{{ ok=$false; reason="No dwm.exe found for current session"; sessionId=$sess }} | ConvertTo-Json -Compress
+$sess = __SESSION_ID__
+
+$dwm = Get-Process dwm -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $sess } | Select-Object -First 1
+if (-not $dwm) {
+  @{ ok=$false; reason="No dwm.exe found for current session"; sessionId=$sess } | ConvertTo-Json -Compress
   exit 0
-}}
-$pid = $dwm.Id
+}
+
+$dwmPid = $dwm.Id
 
 $memBytes = $null
 $memInstances = 0
 $memError = $null
-try {{
-  $memSamples = (Get-Counter "\\GPU Process Memory(pid_$pid*)\\Local Usage" -ErrorAction Stop).CounterSamples
+try {
+  $memSamples = (Get-Counter "\GPU Process Memory(pid_$dwmPid*)\Local Usage" -ErrorAction Stop).CounterSamples
   $memInstances = @($memSamples).Count
-  if ($memInstances -gt 0) {{
+  if ($memInstances -gt 0) {
+    # Use MAX across instances to avoid double-counting.
     $memBytes = ($memSamples | Measure-Object -Property CookedValue -Maximum).Maximum
-  }}
-}} catch {{
+  }
+} catch {
   $memError = $_.Exception.Message
-}}
+}
 
-$engPct = $null
+$engMaxPct = $null
 $engInstances = 0
 $engError = $null
-try {{
-  $engSamples = (Get-Counter "\\GPU Engine(pid_$pid*engtype_3D)\\Utilization Percentage" -ErrorAction Stop).CounterSamples
-  $engInstances = @($engSamples).Count
-  if ($engInstances -gt 0) {{
-    $engPct = ($engSamples | Measure-Object -Property CookedValue -Maximum).Maximum
-  }}
-}} catch {{
-  $engError = $_.Exception.Message
-}}
 
-@{{
+# Sample multiple times to reduce false 0.00% on an idle instant.
+$sampleIntervalSec = 1
+$maxSamples = 3
+
+try {
+  $engSets = Get-Counter "\GPU Engine(pid_$dwmPid*engtype_3D)\Utilization Percentage" -SampleInterval $sampleIntervalSec -MaxSamples $maxSamples -ErrorAction Stop
+  $engSamples = $engSets.CounterSamples
+  $engInstances = @($engSamples).Count
+  if ($engInstances -gt 0) {
+    $engMaxPct = ($engSamples | Measure-Object -Property CookedValue -Maximum).Maximum
+  }
+} catch {
+  $engError = $_.Exception.Message
+}
+
+@{
   ok=$true;
   sessionId=$sess;
-  dwmPid=$pid;
+  dwmPid=$dwmPid;
   gpuMemLocalBytes=$memBytes;
   gpuMemCounterInstances=$memInstances;
-  gpu3dUtilPct=$engPct;
+  gpu3dUtilMaxPct=$engMaxPct;
   gpu3dCounterInstances=$engInstances;
+  sampleIntervalSec=$sampleIntervalSec;
+  maxSamples=$maxSamples;
   memError=$memError;
   engError=$engError;
-}} | ConvertTo-Json -Compress
-""".format(session_id=session_id).strip()
+} | ConvertTo-Json -Compress
+""".strip()
 
-    result = None
-    last_output = None
-    for exe in ("powershell", "pwsh"):
-        try:
-            result = subprocess.run(
-                [exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            break
-        except FileNotFoundError:
-            continue
-        except subprocess.CalledProcessError as e:
-            last_output = getattr(e, "stdout", None)
-            result = None
-            break
-
-    if result is None:
+    ps_script = ps_template.replace("__SESSION_ID__", str(session_id))
+    ok, ps_out = _run_powershell(ps_script)
+    if not ok:
         print("Failed to run PowerShell/Get-Counter for session GPU check.", file=sys.stderr)
-        if last_output:
-            print(last_output, file=sys.stderr)
+        if ps_out:
+            print(ps_out, file=sys.stderr)
         return False
 
-    raw = (result.stdout or "").strip()
-    if not raw:
-        print("PowerShell returned no output for session GPU check.", file=sys.stderr)
-        return False
-
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        print("Could not parse PowerShell output as JSON:", file=sys.stderr)
-        print(raw, file=sys.stderr)
+    data = _safe_json_loads(ps_out)
+    if not data:
+        print("PowerShell returned no JSON output for session GPU check.", file=sys.stderr)
+        if ps_out and verbose:
+            print(ps_out, file=sys.stderr)
         return False
 
     if not data.get("ok", False):
@@ -354,35 +405,52 @@ try {{
     mem_bytes = data.get("gpuMemLocalBytes")
     mem_instances = int(data.get("gpuMemCounterInstances") or 0)
     eng_instances = int(data.get("gpu3dCounterInstances") or 0)
-    eng_pct = data.get("gpu3dUtilPct")
+    eng_max_pct = data.get("gpu3dUtilMaxPct")
+    sample_interval = data.get("sampleIntervalSec")
+    max_samples = data.get("maxSamples")
 
-    # "Really enabled" heuristic:
-    # - If DWM in this session has non-zero GPU process memory usage, it's almost certainly using the GPU.
-    # - If memory is unavailable but the 3D engine counter exists for DWM, it's still a strong signal.
-    has_gpu_mem = isinstance(mem_bytes, (int, float)) and mem_bytes > 0
-    has_gpu_eng_counter = eng_instances > 0
-    enabled = has_gpu_mem or has_gpu_eng_counter
+    # Conservative verdict:
+    # - Memory allocation alone is NOT used as proof.
+    # - Require non-trivial 3D utilization.
+    activity_threshold_pct = 0.10
+    activity_detected = isinstance(eng_max_pct, (int, float)) and float(eng_max_pct) > activity_threshold_pct
+    enabled = bool(activity_detected)
 
     print("Session GPU verification (best-effort):")
     print(f"  Remote session detected: {in_rdp} (SESSIONNAME={session_name!r})")
     print(f"  Session ID: {session_id}")
     print(f"  Policy bEnumerateHWBeforeSW (GPU adapter): {gpu_policy if gpu_policy is not None else '<not set>'}")
     print(f"  Policy fEnableWddmDriver (WDDM): {wddm_policy if wddm_policy is not None else '<not set>'}")
-    print(f"  DWM PID (this session): {dwm_pid}")
+    print(f"  DWM PID (this session): {dwm_pid if dwm_pid is not None else '<unavailable>'}")
 
     if mem_instances > 0 and mem_bytes is not None:
-        print(f"  DWM GPU process memory (Local Usage): {mem_bytes / (1024 * 1024):.2f} MB")
+        print(f"  DWM GPU process memory (Local Usage): {_format_mb(mem_bytes)}")
     else:
         print("  DWM GPU process memory (Local Usage): <unavailable>")
         if data.get("memError") and verbose:
             print(f"    memError: {data.get('memError')}")
 
-    if eng_instances > 0 and eng_pct is not None:
-        print(f"  DWM GPU 3D engine utilization (sample): {float(eng_pct):.2f}%")
+    if eng_instances > 0 and eng_max_pct is not None:
+        print(
+            f"  DWM GPU 3D engine utilization (max over {max_samples} samples @ {sample_interval}s): "
+            f"{float(eng_max_pct):.2f}%"
+        )
     else:
         print("  DWM GPU 3D engine utilization: <unavailable>")
         if data.get("engError") and verbose:
             print(f"    engError: {data.get('engError')}")
+
+    if not enabled:
+        if gpu_policy == 1:
+            print(
+                "  Note: policy indicates GPU adapters are enabled, but no 3D activity was observed. "
+                "This can happen if the session is idle; run a GPU-heavy workload and re-check."
+            )
+        elif gpu_policy == 0:
+            print(
+                "  Note: policy indicates GPU adapters are disabled. Some GPU memory usage may still appear for DWM; "
+                "memory alone is not treated as proof of GPU acceleration."
+            )
 
     print(
         f"  Verdict: "
@@ -508,17 +576,17 @@ def _make_parser() -> argparse.ArgumentParser:
         help="Restart Remote Desktop Services (TermService). WARNING: disconnects all RDP sessions.",
     )
     trouble.add_argument(
-        "--check-session-gpu",
+        "-tcg", "--check-session-gpu",
         action = "store_true",
         help = "Best-effort runtime check: verify the CURRENT session is using the GPU (via DWM GPU counters).",
     )
     trouble.add_argument(
-        "--status",
+        "-ts", "--status",
         action="store_true",
         help="Show current registry values for all related policies.",
     )
     trouble.add_argument(
-        "--diagnostics",
+        "-td", "--diagnostics",
         action="store_true",
         help="Print verification and troubleshooting tips.",
     )
@@ -529,7 +597,7 @@ def _make_parser() -> argparse.ArgumentParser:
         help="Show what would be changed, but do not modify the registry.",
     )
     parser.add_argument(
-        "--verbose",
+        "-v", "--verbose",
         action="store_true",
         help="Print extra information about what the script is doing.",
     )

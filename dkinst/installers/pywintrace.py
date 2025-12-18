@@ -26,9 +26,14 @@ class PyWintrace(_base.BaseInstaller):
 
     def install(
             self,
-            force: bool = False
-    ):
-        subprocess.check_call([sys.executable, "-m", "pip", "install", WHEEL])
+    ) -> int:
+        # Execute subprocess and return the result code.
+        command = [sys.executable, "-m", "pip", "install", WHEEL]
+        result = subprocess.run(command, capture_output=True, text=True)
+        console.print(result.stdout)
+        if result.returncode != 0:
+            console.print(f"[red]{result.stderr}[/red]")
+        return result.returncode
 
     def _show_help(
             self,

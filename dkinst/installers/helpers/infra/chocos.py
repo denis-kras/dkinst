@@ -7,7 +7,7 @@ console = Console()
 
 
 def install_package(package_id: str) -> tuple[int, str]:
-    console.print(f"[blue]Installing Chocolatey package: {package_id}[/blue]")
+    console.print(f"[cyan]Installing Chocolatey package: {package_id}[/cyan]")
 
     return run_package_manager_command(
         [
@@ -22,7 +22,7 @@ def install_package(package_id: str) -> tuple[int, str]:
 
 
 def upgrade_package(package_id: str) -> tuple[int, str]:
-    console.print(f"[blue]Upgrading Chocolatey package: {package_id}[/blue]")
+    console.print(f"[cyan]Upgrading Chocolatey package: {package_id}[/cyan]")
 
     return run_package_manager_command(
         [
@@ -37,7 +37,7 @@ def upgrade_package(package_id: str) -> tuple[int, str]:
 
 
 def uninstall_package(package_id: str) -> tuple[int, str]:
-    console.print(f"[blue]Uninstalling Chocolatey package: {package_id}[/blue]")
+    console.print(f"[cyan]Uninstalling Chocolatey package: {package_id}[/cyan]")
 
     return run_package_manager_command(
         [
