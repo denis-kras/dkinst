@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.14 - 21.12.2025
+  * Fixed Python installer and upgrader on Windows.
 * 0.37.13 - 21.12.2025
   * Added Python Minor version upgrader on Windows.
   * Fixed python cmd installer for Windows.

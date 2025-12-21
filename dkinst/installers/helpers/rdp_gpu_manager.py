@@ -1,4 +1,4 @@
-"""
+r"""
 RDP GPU tuning helper for Windows.
 
 This script manipulates the registry values that back these Group Policy settings:
@@ -49,7 +49,7 @@ def set_gpu_registry(
         dry_run: bool = False,
         verbose: bool = False,
 ) -> None:
-    """
+    r"""
     Use hardware graphics adapters for all Remote Desktop Services sessions.
 
     Policy value:
@@ -73,7 +73,7 @@ def set_hw_encoding_registry(
         dry_run: bool = False,
         verbose: bool = False,
 ) -> None:
-    """
+    r"""
     Configure H.264/AVC hardware encoding for Remote Desktop Connections.
 
     Policy value:
@@ -97,7 +97,7 @@ def set_avc444_registry(
         dry_run: bool = False,
         verbose: bool = False,
 ) -> None:
-    """
+    r"""
     Prioritize H.264/AVC 444 graphics mode for Remote Desktop Connections.
 
     Policy value:
@@ -121,7 +121,7 @@ def set_wddm_registry(
         dry_run: bool = False,
         verbose: bool = False,
 ) -> None:
-    """
+    r"""
     Use WDDM graphics display driver for Remote Desktop Connections.
 
     Policy value:

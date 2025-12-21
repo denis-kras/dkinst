@@ -1,6 +1,5 @@
-:: Version 1.2.1
-:: Fixed fethching mixro version if has no installer
-:: Added -l (list-only) mode to print the resolved latest patch without install
+:: Version 1.2.2
+:: Download installer to %TEMP%, execute, then remove it (cleanup even on failure)
 @echo off
 setlocal
 
@@ -41,9 +40,6 @@ if not defined PYTHON_VERSION (
     echo Example: %~nx0 3.12 -l
     exit /b 1
 )
-
-set "PYINSTALLER=%~dp0python_installer.exe"
-
 rem ===== Parse requested version =====
 for /f "tokens=1-3 delims=." %%A in ("%PYTHON_VERSION%") do (
     set "PV_MAJOR=%%A"
@@ -147,6 +143,11 @@ if "%LIST_ONLY%"=="1" (
     exit /b 0
 )
 
+
+rem ===== Use a temp-file installer path (download -> execute -> delete) =====
+set "PYINSTALLER=%TEMP%\python-%LATEST_VERSION%-%ARCH%-installer.exe"
+call :Log Installer path (TEMP): "%PYINSTALLER%"
+
 if "%INSTALLER_URL%"=="" (
     echo Failed to retrieve the installer URL for Python %LATEST_VERSION%.
     exit /b 1
@@ -154,19 +155,37 @@ if "%INSTALLER_URL%"=="" (
 
 echo Downloading the installer from %INSTALLER_URL%...
 echo To: "%PYINSTALLER%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile '%PYINSTALLER%'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%INSTALLER_URL%' -OutFile '%PYINSTALLER%'"
+set "DL_RC=%ERRORLEVEL%"
+if not "%DL_RC%"=="0" (
+    echo Download failed with code %DL_RC%.
+    if exist "%PYINSTALLER%" del /f /q "%PYINSTALLER%"
+    endlocal
+    exit /b %DL_RC%
+)
+if not exist "%PYINSTALLER%" (
+    echo Download failed: installer file not found at "%PYINSTALLER%".
+    endlocal
+    exit /b 1
+)
 
 rem Install Python with specified switches
 echo Installing Python %LATEST_VERSION%...
 "%PYINSTALLER%" /passive InstallAllUsers=1 PrependPath=1 TargetDir="%TARGET_DIR%" AssociateFiles=1 InstallLauncherAllUsers=1
+set "INSTALL_RC=%ERRORLEVEL%"
 
-rem Clean up
-del "%PYINSTALLER%"
+rem Clean up (always)
+if exist "%PYINSTALLER%" del /f /q "%PYINSTALLER%"
+
+if not "%INSTALL_RC%"=="0" (
+    echo Python installer exited with code %INSTALL_RC%.
+    endlocal
+    exit /b %INSTALL_RC%
+)
 
 echo Python %LATEST_VERSION% installation completed.
 endlocal
 exit /b 0
-
 :BuildInstallerUrl
 set "INSTALLER_FILE=python-%~1.exe"
 if /I "%ARCH%"=="amd64" set "INSTALLER_FILE=python-%~1-amd64.exe"

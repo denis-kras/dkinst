@@ -1,13 +1,18 @@
 import sys
 import os
-import shlex
 from typing import Literal
 import subprocess
+import shlex
+
+from rich.console import Console
 
 from atomicshop.wrappers import githubw
 
 from . import _base
-from .helpers.infra.printing import printc
+from .helpers.infra import commands
+
+
+console = Console()
 
 
 class PythonUpgrader(_base.BaseInstaller):
@@ -53,11 +58,11 @@ def upgrade_function(target_dir: str):
     )
     cmd_file_path: str = github_wrapper.download_file("prereqs/install_python_as_admin_win.cmd", target_dir)
     if not cmd_file_path:
-        printc("Failed to download the Python installer script.", "red")
+        console.print("[red]Failed to download the Python installer script.[/red]")
         return 1
 
     if not os.path.isfile(cmd_file_path):
-        printc(f"The downloaded Python installer script does not exist at path: {cmd_file_path}", "red")
+        console.print(f"[red]The downloaded Python installer script does not exist at path: {cmd_file_path}[/red]")
         return 1
 
     # Get the latest python version of the current minor version.
@@ -66,28 +71,29 @@ def upgrade_function(target_dir: str):
     result = subprocess.run(command, capture_output=True)
     if result.returncode != 0:
         os.remove(cmd_file_path)
-        printc(f"Failed to run the Python installer script. Error:\n"
-               f"{result.stderr.decode()}", "red")
+        console.print(f"[red]Failed to run the Python installer script. Error:\n"
+                      f"{result.stderr.decode()}[/red]")
         return 1
     else:
         latest_version: str = result.stdout.decode().strip()
-        printc(f"Latest Python Micro Version with Installer: {latest_version}", "cyan")
+        console.print(f"Latest Python Micro Version with Installer: {latest_version}")
 
-        exit()
         latest_major, latest_minor, latest_micro = map(int, latest_version.split('.'))
         if latest_micro > current_python_version.micro:
-            printc(f"A new Python version is available: {latest_version} "
-                          f"(current: {current_minor_version}.{current_python_version.micro}).", "yellow")
-            print(f"Running the installer to upgrade Python to version {latest_version}...")
-            install_result = subprocess.run(["cmd.exe", "/c", cmd_file_path, latest_version], capture_output=True)
-            if install_result.returncode != 0:
-                os.remove(cmd_file_path)
-                printc(f"Failed to run the Python installer script for installation. Error:\n"
-                       f"{install_result.stderr.decode()}", "red")
-                return 1
+            console.print(f"[yellow]A new Python version is available: {latest_version} "
+                          f"(current: {current_minor_version}.{current_python_version.micro})[/yellow]")
+            command: list = ["cmd.exe", "/c", cmd_file_path, latest_version]
+            print(f"Executing: {shlex.join(command)}")
+            console.print(f"Running the installer to upgrade Python to version {latest_version}...")
+
+            rc, message = commands.run_package_manager_command(command, "Install")
+            if rc != 0:
+                console.print(f"[red]Failed to install.[/red]")
+                console.print(f"[red]{message}[/red]")
+                return rc
             else:
-                printc(f"Python has been successfully upgraded to version {latest_version}.", "green")
+                console.print(f"[green]Python has been successfully upgraded to version {latest_version}.[/green]")
         else:
-            printc(f"You already have the latest Python version: {latest_version}.", "green")
+            console.print(f"[green]You already have the latest Python version: {latest_version}.[/green]")
     os.remove(cmd_file_path)
     return 0
