@@ -42,7 +42,7 @@ ELASTIC_JVM_OPTIONS_4GB_MEMORY_USAGE: list[str] = ['-Xms4g', '-Xmx4g']
 
 
 # This is pure bash script.
-"""
+r"""
 #!/bin/bash
 
 # Color text in red.

@@ -139,7 +139,7 @@ def uninstall_eset_internet_security(
         installer_dir: str,
         force: bool = False
 ) -> int:
-    """
+    r"""
     Silently uninstall ESET Internet Security.
 
     Also: "%ProgramFiles%\ESET\ESET Security\callmsi.exe" /x {GUID} /qb! REBOOT=ReallySuppress

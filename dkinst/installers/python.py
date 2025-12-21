@@ -19,8 +19,11 @@ class PythonUpgrader(_base.BaseInstaller):
     def __init__(self):
         super().__init__(__file__)
         self.description: str = "Python Micro Version Updater"
-        self.version: str = "1.0.0"
+        self.version: str = "1.0.1"
+        # Updated admin permissions.
         self.platforms: list = ["windows"]
+
+        self.admins: dict = {"windows": ["upgrade"]}
 
     def upgrade(
             self,

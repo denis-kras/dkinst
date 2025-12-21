@@ -6,7 +6,6 @@ import argparse
 from pathlib import Path
 import subprocess
 import os
-import shutil
 from typing import Literal
 import shlex
 
@@ -793,6 +792,17 @@ def main(argv: list[str] | None = None) -> int:
     dkinst upgrade  <script>    [extra args passed through]
     dkinst uninstall <script>  [extra args passed through]
     """
+
+    # Remove empty folders in config dir on Windows.
+    if os.name == 'nt':
+        path_to_check: str = _base.INSTALLATION_PATH_PORTABLE_WINDOWS
+        # Get folders in the config path.
+        if os.path.exists(path_to_check):
+            for item in os.listdir(path_to_check):
+                item_path: str = os.path.join(path_to_check, item)
+                if os.path.isdir(item_path) and not os.listdir(item_path):
+                    os.rmdir(item_path)
+
     parser: argparse.ArgumentParser = _make_parser()          # builds the ArgumentParser shown earlier
 
     if argv is None:

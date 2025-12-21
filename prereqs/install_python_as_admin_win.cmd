@@ -40,6 +40,16 @@ if not defined PYTHON_VERSION (
     echo Example: %~nx0 3.12 -l
     exit /b 1
 )
+rem ===== Elevate to Administrator if needed (skip in list-only mode) =====
+if "%LIST_ONLY%"=="0" (
+    call :IsAdmin
+    if errorlevel 1 (
+        call :Log Not running elevated. Relaunching with administrative privileges...
+        call :RelaunchElevated %*
+        exit /b %ERRORLEVEL%
+    )
+)
+
 rem ===== Parse requested version =====
 for /f "tokens=1-3 delims=." %%A in ("%PYTHON_VERSION%") do (
     set "PV_MAJOR=%%A"
@@ -186,6 +196,21 @@ if not "%INSTALL_RC%"=="0" (
 echo Python %LATEST_VERSION% installation completed.
 endlocal
 exit /b 0
+:IsAdmin
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+ "if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 } else { exit 0 }"
+exit /b %ERRORLEVEL%
+
+:RelaunchElevated
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+ "try { Start-Process -FilePath '%~f0' -ArgumentList '%*' -WorkingDirectory '%CD%' -Verb RunAs; exit 0 } catch { exit 1 }"
+if errorlevel 1 (
+    echo Elevation failed or was canceled.
+    exit /b 1
+)
+exit /b 0
+
+
 :BuildInstallerUrl
 set "INSTALLER_FILE=python-%~1.exe"
 if /I "%ARCH%"=="amd64" set "INSTALLER_FILE=python-%~1-amd64.exe"
