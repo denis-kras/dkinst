@@ -1,10 +1,16 @@
+import shutil
 from pathlib import Path
 from types import ModuleType
 from typing import Literal
 import os
 
+from rich.console import Console
+
 from . import _base
 from .helpers import tesseract_ocr_manager
+
+
+console = Console()
 
 
 class TesseractOCR(_base.BaseInstaller):
@@ -32,7 +38,17 @@ class TesseractOCR(_base.BaseInstaller):
         return self.install(force=force)
 
     def is_installed(self) -> bool:
-        return os.path.isfile(self.exe_path)
+        command_available: bool =  shutil.which("tesseract") is not None
+        path_available: bool = os.path.isfile(self.exe_path)
+
+        if command_available and path_available:
+            return True
+        else:
+            if not command_available:
+                console.print("[yellow]tesseract command not found in system PATH.[/yellow]")
+            if not path_available:
+                console.print(f"[yellow]tesseract executable not found at '{self.exe_path}'.[/yellow]")
+            return False
 
     def _show_help(
             self,

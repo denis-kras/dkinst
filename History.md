@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.12 - 21.12.2025
+  * Added verbosity on nodejs version check.
+  * Fixed Tesseract OCR installer is_installed method.
 * 0.37.9-11 - 17.12.2025
   * Fixed non-return code on dependencies.
   * Disabled RDP GPU enabler check.

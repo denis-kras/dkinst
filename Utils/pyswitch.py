@@ -5,9 +5,13 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import winreg
+
+
+VERSION: str = "1.0.0"
+# Using both py and modifying PATH now.
 
 
 @dataclass(frozen=True)
@@ -99,6 +103,14 @@ def set_user_path(new_user_path: str) -> None:
         winreg.SetValueEx(k, "Path", 0, reg_type, new_user_path)
 
 
+def set_user_env_var(name: str, value: str) -> None:
+    """Persist a user-level environment variable in HKCU\\Environment."""
+    if winreg is None:
+        return
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_SET_VALUE) as k:
+        winreg.SetValueEx(k, name, 0, winreg.REG_SZ, value)
+
+
 def get_system_path() -> str:
     if winreg is None:
         return ""
@@ -150,7 +162,7 @@ def reorder_path(original: str, installs: List[PyInstall], chosen: PyInstall) ->
 # ----------------------------
 
 def run_py_launcher() -> List[PyInstall]:
-    """
+    r"""
     Parses output like:
       -V:3.13 *        C:\Python313\python.exe
       -V:3.12          C:\Python312\python.exe
@@ -204,6 +216,42 @@ def run_py_launcher() -> List[PyInstall]:
 
 
 # ----------------------------
+# Determining current defaults
+# ----------------------------
+
+def get_default_python_from_path(env: Optional[Dict[str, str]] = None) -> Tuple[Optional[str], List[str]]:
+    """Return (first_hit, all_hits) for `python.exe` as resolved by PATH."""
+    try:
+        cp = subprocess.run(["where", "python"], capture_output=True, text=True, check=False, env=env)
+    except Exception:
+        return None, []
+
+    hits = [ln.strip() for ln in (cp.stdout or "").splitlines() if ln.strip()]
+
+    # Prefer an actual python.exe over wrappers (python.bat, etc.) when present.
+    first = next((h for h in hits if h.casefold().endswith("python.exe")), None)
+    if first is None and hits:
+        first = hits[0]
+    return first, hits
+
+
+def get_default_python_from_py_launcher() -> Optional[str]:
+    """Return the `sys.executable` path that `py` runs by default."""
+    try:
+        cp = subprocess.run(
+            ["py", "-c", "import sys; print(sys.executable)"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except Exception:
+        return None
+
+    out = (cp.stdout or "").strip()
+    return out or None
+
+
+# ----------------------------
 # Spawning a new shell with updated PATH
 # ----------------------------
 
@@ -231,15 +279,22 @@ def spawn_shell(shell: str, env: dict) -> None:
 # ----------------------------
 
 def main(argv: List[str]) -> int:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("version", nargs="?", help='Version/tag to activate, e.g. "3.13"')
     ap.add_argument("--no-system", action="store_true", help="Do not modify System PATH (HKLM).")
+    ap.add_argument(
+        "--no-py-default",
+        action="store_true",
+        help="Do not set PY_PYTHON (Windows Python Launcher default).",
+    )
     ap.add_argument("--spawn", action="store_true", help="Spawn a new shell with the updated PATH.")
     ap.add_argument("--shell", default="cmd", help=(
         "Shell to spawn: cmd | powershell | pwsh (used with --spawn).\n"
         "Example Switch and immediately open a new console that is guaranteed to use the new default:\n"
         "    python pyswitch.py 3.13 --spawn --shell cmd\n"
-        "    python pyswitch.py 3.12 --spawn --shell powershell"
+        "    python pyswitch.py 3.12 --spawn --shell powershell\n"
+        "Example without updated shell (you'll need to restart your consoles to pick up the new PATH):\n"
+        "    python pyswitch.py 3.13\n"
     ))
     ap.add_argument("--elevated", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args(argv)
@@ -250,8 +305,41 @@ def main(argv: List[str]) -> int:
         return 2
 
     if not args.version:
+        # Show current defaults before printing the available installs.
+        exe_to_install = {norm_path(i.exe): i for i in installs}
+
+        python_default_exe, python_hits = get_default_python_from_path()
+        py_default_exe = get_default_python_from_py_launcher()
+
+        def fmt_default(exe: Optional[str]) -> str:
+            if not exe:
+                return "(not found)"
+            inst = exe_to_install.get(norm_path(exe))
+            return f"{inst.tag} -> {exe}" if inst else f"{exe} (not in py -0p list)"
+
+        print("Current defaults:")
+        print(f"  python (PATH): {fmt_default(python_default_exe)}")
+        print(f"  py (launcher): {fmt_default(py_default_exe)}")
+        print("\nAvailable installs (py -0p):")
+
+        python_key = norm_path(python_default_exe) if python_default_exe else ""
+        py_key = norm_path(py_default_exe) if py_default_exe else ""
+
         for inst in installs:
-            print(f"{inst.version} - {inst.exe}")
+            flags: List[str] = []
+            if python_key and norm_path(inst.exe) == python_key:
+                flags.append("python")
+            if py_key and norm_path(inst.exe) == py_key:
+                flags.append("py")
+            marker = f"  <== default for {', '.join(flags)}" if flags else ""
+            print(f"  {inst.tag:<8} {inst.exe}{marker}")
+
+        # If multiple python.exe are in PATH, show them explicitly (helps spot WindowsApps/store aliases).
+        if len(python_hits) > 1:
+            print("\nOther python.exe found in PATH (resolution order):")
+            for hit in python_hits[1:]:
+                print(f"  {hit}")
+
         return 0
 
     want = args.version.strip()
@@ -278,6 +366,13 @@ def main(argv: List[str]) -> int:
         new_system_path = reorder_path(get_system_path(), installs, chosen)
         set_system_path(new_system_path)
 
+    if not args.no_py_default:
+        # Make `py` default follow the selected install (persists for new processes).
+        set_user_env_var("PY_PYTHON", chosen.tag)
+
+        # Best-effort for processes we spawn from this run.
+        os.environ["PY_PYTHON"] = chosen.tag
+
     broadcast_env_change()
 
     # Also compute a "best effort" current-process PATH, for spawning a shell immediately
@@ -287,6 +382,10 @@ def main(argv: List[str]) -> int:
     os.environ["PATH"] = new_current
 
     print(f"Activated {chosen.version} -> {chosen.exe}")
+
+    if not args.no_py_default:
+        print(f"Set PY_PYTHON={chosen.tag} (py launcher default).")
+
     if args.no_system:
         print("User PATH updated (persisted).")
     else:

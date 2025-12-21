@@ -13,8 +13,8 @@ from .infra import permissions, msis, system
 console = Console()
 
 
-VERSION: str = "1.0.0"
-"""Initial"""
+VERSION: str = "1.0.1"
+"""updated verbosity on version check"""
 
 
 # === WINDOWS FUNCTIONS ================================================================================================
@@ -44,11 +44,12 @@ class NodeJSWindowsInstallerFailedToExtractVersionInString(Exception):
     pass
 
 
-def is_nodejs_installed_win() -> bool:
+def is_nodejs_installed_win(verbose: bool = False) -> bool:
     """
     Check if Node.js is installed by trying to run 'node -v'.
     """
-    print("Checking if Node.js is installed...")
+    if verbose:
+        print("Checking if Node.js is installed...")
     try:
         try:
             node_version = subprocess.check_output(["node", "-v"], text=True)
@@ -57,7 +58,9 @@ def is_nodejs_installed_win() -> bool:
             raise
 
         node_version = node_version.replace("\n", "")
-        console.print(f"node.exe is found. Version: {node_version}", style="green")
+
+        if verbose:
+            console.print(f"node.exe is found. Version: {node_version}", style="green")
 
         try:
             npm_version = subprocess.check_output(["npm.cmd", "-v"], text=True).strip()
@@ -66,11 +69,14 @@ def is_nodejs_installed_win() -> bool:
             raise
 
         npm_version = npm_version.replace("\n", "")
-        console.print(f"npm.cmd is found. Version: {npm_version}", style="green")
-        print("Node.js is installed.")
+
+        if verbose:
+            console.print(f"npm.cmd is found. Version: {npm_version}", style="green")
+            print("Node.js is installed.")
         return True
     except FileNotFoundError:
-        print("Node.js is not installed.")
+        if verbose:
+            print("Node.js is not installed.")
         return False
 
 
