@@ -1,5 +1,3 @@
-from pathlib import Path
-from types import ModuleType
 from typing import Literal
 
 from rich.console import Console

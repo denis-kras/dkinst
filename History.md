@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.13 - 21.12.2025
+  * Added Python Minor version upgrader on Windows.
+  * Fixed python cmd installer for Windows.
 * 0.37.12 - 21.12.2025
   * Added verbosity on nodejs version check.
   * Fixed Tesseract OCR installer is_installed method.

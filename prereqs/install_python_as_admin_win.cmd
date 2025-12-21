@@ -1,19 +1,50 @@
-:: Version 1.0.4
-:: Fixed micro verson download
+:: Version 1.2.1
+:: Fixed fethching mixro version if has no installer
+:: Added -l (list-only) mode to print the resolved latest patch without install
 @echo off
 setlocal
 
+rem ============================================================
+rem Arguments
+rem   <PythonVersion>   Required. e.g. 3.12 or 3.12.10
+rem   -l                List-only mode. Prints the resolved latest patch
+rem                     version that has an available Windows installer and
+rem                     exits without downloading/installing.
+rem ============================================================
+
+set "LIST_ONLY=0"
+set "PYTHON_VERSION="
+
+:ParseArgs
+if "%~1"=="" goto ArgsDone
+if /I "%~1"=="-l" (
+    set "LIST_ONLY=1"
+) else (
+    if not defined PYTHON_VERSION (
+        set "PYTHON_VERSION=%~1"
+    ) else (
+        echo Unknown argument: %~1
+        echo Usage: %~nx0 ^<PythonVersion^> [-l]
+        echo Example: %~nx0 3.12
+        echo Example: %~nx0 3.12 -l
+        exit /b 1
+    )
+)
+shift
+goto ParseArgs
+
+:ArgsDone
 rem Check if Python version is provided
-if "%~1"=="" (
-    echo Usage: %0 ^<PythonVersion^>
-    echo Example: %0 3.12
+if not defined PYTHON_VERSION (
+    echo Usage: %~nx0 ^<PythonVersion^> [-l]
+    echo Example: %~nx0 3.12
+    echo Example: %~nx0 3.12 -l
     exit /b 1
 )
 
 set "PYINSTALLER=%~dp0python_installer.exe"
 
 rem ===== Parse requested version =====
-set "PYTHON_VERSION=%~1"
 for /f "tokens=1-3 delims=." %%A in ("%PYTHON_VERSION%") do (
     set "PV_MAJOR=%%A"
     set "PV_MINOR=%%B"
@@ -21,14 +52,14 @@ for /f "tokens=1-3 delims=." %%A in ("%PYTHON_VERSION%") do (
 )
 
 set "PYTHON_MAJOR_MINOR=%PV_MAJOR%.%PV_MINOR%"
-echo Requested Python version: %PYTHON_MAJOR_MINOR%
+call :Log Requested Python version: %PYTHON_MAJOR_MINOR%
 
 rem ===== Decide target architecture (defaults to amd64) =====
 set "ARCH=amd64"
 if /I "%PROCESSOR_ARCHITECTURE%"=="x86" set "ARCH=x86"
 if /I "%PROCESSOR_ARCHITEW6432%"=="x86" set "ARCH=amd64"
 
-echo ARCHITECTURE: %ARCH%
+call :Log ARCHITECTURE: %ARCH%
 
 
 rem ===== Work out LATEST_VERSION =====
@@ -41,20 +72,18 @@ if not "%PV_PATCH%"=="" (
 goto FindLatestVersion
 
 :AfterVersion
-echo Provided version: %LATEST_VERSION%
+call :Log Provided version: %LATEST_VERSION%
 goto Finalize
 
 :FindLatestVersion
 rem Find the latest patch version
-echo Finding the latest patch version for Python %PYTHON_MAJOR_MINOR%...
+call :Log Finding the latest patch version for Python %PYTHON_MAJOR_MINOR%...
 
-:: This is the same as the next, but without the for loop. Since if there will be an exception, we will not get it with for.
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
- "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $mm='%PYTHON_MAJOR_MINOR%'; $maj,$min=$mm -split '\.'; $html=(Invoke-WebRequest 'https://www.python.org/ftp/python/').Content; $rx=[regex]'href=""(?:/ftp/python/)?(\d+)\.(\d+)\.(\d+)/""'; $vers=foreach($m in $rx.Matches($html)){[version]::Parse(($m.Groups[1].Value+'.'+$m.Groups[2].Value+'.'+$m.Groups[3].Value))}; ($vers|?{$_.Major -eq [int]$maj -and $_.Minor -eq [int]$min}|sort -desc|select -f 1).ToString()"
 
 :: Get the version.
 for /f "usebackq delims=" %%I in (`^
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $ProgressPreference='SilentlyContinue';" ^
     "$url = 'https://www.python.org/ftp/python/';" ^
     "$page = Invoke-WebRequest -Uri $url;" ^
     "$versions = $page.Links | Where-Object { $_.href -match '^\d+\.\d+\.\d+/$' } | ForEach-Object { $_.href.TrimEnd('/') };" ^
@@ -63,7 +92,7 @@ for /f "usebackq delims=" %%I in (`^
     `) do set "LATEST_VERSION=%%I"
 
 rem Debug: Show the latest version
-echo LATEST_VERSION: %LATEST_VERSION%
+call :Log LATEST_VERSION: %LATEST_VERSION%
 
 if "%LATEST_VERSION%"=="" (
     echo Failed to find the latest patch version for Python %PYTHON_MAJOR_MINOR%.
@@ -72,25 +101,50 @@ if "%LATEST_VERSION%"=="" (
 
 :Finalize
 set "TARGET_DIR=C:\Python%PYTHON_MAJOR_MINOR:.=%"
-echo TARGET INSTALLATION DIR: %TARGET_DIR%
+call :Log TARGET INSTALLATION DIR: %TARGET_DIR%
 
 rem Download the Python installer for the determined version
-echo Fetching the installer for Python %LATEST_VERSION%...
+call :Log Fetching the installer for Python %LATEST_VERSION%...
 
-rem Decide installer file name based on architecture
-set "INSTALLER_FILE=python-%LATEST_VERSION%.exe"
-if /I "%ARCH%"=="amd64" set "INSTALLER_FILE=python-%LATEST_VERSION%-amd64.exe"
+rem ===== Ensure the resolved version has a Windows .exe installer; if not, walk patch down =====
+set "CHECK_VERSION=%LATEST_VERSION%"
+for /f "tokens=1-3 delims=." %%A in ("%CHECK_VERSION%") do (
+    set "CV_MAJOR=%%A"
+    set "CV_MINOR=%%B"
+    set "CV_PATCH=%%C"
+)
 
-set "INSTALLER_URL=https://www.python.org/ftp/python/%LATEST_VERSION%/%INSTALLER_FILE%"
+:ProbeInstaller
+call :BuildInstallerUrl "%CHECK_VERSION%"
+call :UrlExists "%INSTALLER_URL%"
+if errorlevel 1 goto InstallerMissing
 
-echo INSTALLER_URL: %INSTALLER_URL%
+set "LATEST_VERSION=%CHECK_VERSION%"
+call :Log Using installer for Python %LATEST_VERSION%
+call :Log INSTALLER_URL: %INSTALLER_URL%
+goto AfterInstallerResolve
 
-if "%INSTALLER_URL%"=="%INSTALLER_URL:.exe=%" (
-    echo No ".exe" found in INSTALLER_URL.
-    echo Try using the installer again by providing the lower exact version, eg. 3.12.10.
+:InstallerMissing
+call :Log Installer not found for %CHECK_VERSION% (%INSTALLER_URL%)
+if "%CV_PATCH%"=="" (
+    echo Unable to determine patch version from "%CHECK_VERSION%".
     exit /b 1
-) else (
-    echo ".exe" found in INSTALLER_URL
+)
+if %CV_PATCH% LEQ 0 (
+    echo No usable Windows .exe installer found for Python %PYTHON_MAJOR_MINOR%.
+    exit /b 1
+)
+set /a CV_PATCH-=1
+set "CHECK_VERSION=%CV_MAJOR%.%CV_MINOR%.%CV_PATCH%"
+goto ProbeInstaller
+
+:AfterInstallerResolve
+
+rem In list-only mode, print ONLY the resolved version and exit.
+if "%LIST_ONLY%"=="1" (
+    echo %LATEST_VERSION%
+    endlocal
+    exit /b 0
 )
 
 if "%INSTALLER_URL%"=="" (
@@ -100,7 +154,7 @@ if "%INSTALLER_URL%"=="" (
 
 echo Downloading the installer from %INSTALLER_URL%...
 echo To: "%PYINSTALLER%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile '%PYINSTALLER%'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri %INSTALLER_URL% -OutFile '%PYINSTALLER%'"
 
 rem Install Python with specified switches
 echo Installing Python %LATEST_VERSION%...
@@ -111,4 +165,19 @@ del "%PYINSTALLER%"
 
 echo Python %LATEST_VERSION% installation completed.
 endlocal
+exit /b 0
+
+:BuildInstallerUrl
+set "INSTALLER_FILE=python-%~1.exe"
+if /I "%ARCH%"=="amd64" set "INSTALLER_FILE=python-%~1-amd64.exe"
+set "INSTALLER_URL=https://www.python.org/ftp/python/%~1/%INSTALLER_FILE%"
+exit /b 0
+
+:UrlExists
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+ "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $ProgressPreference='SilentlyContinue'; $u='%~1'; try { $r=Invoke-WebRequest -Uri $u -Method Head -UseBasicParsing; if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 400) { exit 0 } else { exit 1 } } catch { exit 1 }"
+exit /b %ERRORLEVEL%
+
+:Log
+if "%LIST_ONLY%"=="0" echo %*
 exit /b 0
