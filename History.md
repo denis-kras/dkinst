@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.16 - 07.01.2026
+  * Fixed PyCHarm installer to use Unified version.
+  * Added Npcap GUI installer (Windows).
 * 0.37.15 - 21.12.2025
   * Python upgrader on Windows fix.
   * Added Rufus Portable installer (Windows).

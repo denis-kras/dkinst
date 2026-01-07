@@ -30,7 +30,8 @@ def install_win():
         return 1
 
     def get_latest_pycharm_download_link():
-        url = "https://www.jetbrains.com/pycharm/download/"
+        # url = "https://www.jetbrains.com/pycharm/download/"
+        url = "https://www.jetbrains.com/pycharm/download/?section=windows"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
@@ -42,9 +43,9 @@ def install_win():
         soup = BeautifulSoup(response.text, 'html.parser')
         download_link = None
 
-        # Find the Professional version download link
+        # Find the (PCP) Professional (Now it is unified edition) version download link
         for a in soup.find_all('a', href=True):
-            if '/download?code=PCC&platform=windows' in a['href']:
+            if '/download?code=PCP&platform=windows' in a['href']:
                 download_link = a['href']
                 break
 
