@@ -29,12 +29,20 @@ VERSION: str = "1.0.0"
 def get_latest_mongodb_download_url(
         platform: Literal['windows', 'ubuntu'],
         rc_version: bool = False,
-        major_specific: int = None
+        major_specific: int = None,
+        mongo_url_type: Literal['mongodb', 'db_tools'] = 'mongodb'
 ):
     if platform not in ['windows', 'ubuntu']:
         raise ValueError("Platform must be either 'windows' or 'ubuntu'.")
 
-    response = requests.get(MONGODB_DOWNLOAD_PAGE_URL)
+    if mongo_url_type == 'mongodb':
+        fetch_url: str = MONGODB_DOWNLOAD_PAGE_URL
+    elif mongo_url_type == 'db_tools':
+        fetch_url: str = MONGODB_TOOLS_DOWNLOAD_PAGE_URL
+    else:
+        raise ValueError("mongo_url_type must be either 'mongodb' or 'db_tools'.")
+
+    response = requests.get(fetch_url)
 
     if response.status_code != 200:
         raise MongoDBWebPageNoSuccessCodeError("Failed to load the download page.")
@@ -72,6 +80,13 @@ def get_latest_mongodb_download_url(
                 found_urls = [url]
                 break
 
+    if mongo_url_type == 'db_tools':
+        # Find the first URL that contains 'database-tools'.
+        for url in found_urls:
+            if 'database-tools' in url:
+                found_urls = [url]
+                break
+
     if not found_urls:
         raise MongoDBNoDownloadLinkForWindowsError(
             "Could not find the download link for MongoDB Community Server for Windows x86_64.")
@@ -84,9 +99,12 @@ def get_latest_mongodb_download_url(
 MONGODB_DOWNLOAD_PAGE_URL: str = 'https://www.mongodb.com/try/download/community'
 COMPASS_WIN_INSTALLATION_SCRIPT_URL: str = \
     'https://raw.githubusercontent.com/mongodb/mongo/master/src/mongo/installer/compass/Install-Compass.ps1'
+MONGODB_TOOLS_DOWNLOAD_PAGE_URL: str = 'https://www.mongodb.com/try/download/database-tools'
 
 WHERE_TO_SEARCH_FOR_MONGODB_EXE: str = 'C:\\Program Files\\MongoDB\\Server\\'
 MONGODB_EXE_NAME: str = 'mongod.exe'
+WHERE_TO_SEARCH_FOR_MONGODUMP_EXE: str = 'C:\\Program Files\\MongoDB\\Tools\\'
+MONGO_DUMP_EXE_NAME: str = 'mongodump.exe'
 
 
 class MongoDBWebPageNoSuccessCodeError(Exception):
@@ -133,11 +151,21 @@ def is_installed() -> Union[str, None]:
     return system.find_file(MONGODB_EXE_NAME, WHERE_TO_SEARCH_FOR_MONGODB_EXE)
 
 
+def is_db_tools_installed() -> Union[str, None]:
+    """
+    Check if MongoDB Database Tools are installed.
+    :return: string if MongoDB Database Tools executable is found, None otherwise.
+    """
+
+    return system.find_file(MONGO_DUMP_EXE_NAME, WHERE_TO_SEARCH_FOR_MONGODUMP_EXE)
+
+
 def install_mongodb_win(
         latest: bool = False,
         rc: bool = False,
         major: str = None,
         compass: bool = False,
+        db_tools: bool = False,
         force: bool = False
 ) -> int:
     """
@@ -147,6 +175,7 @@ def install_mongodb_win(
     :param rc: bool, if True, the latest RC version will be downloaded.
     :param major: str, if set, the latest version of the specified major version will be downloaded.
     :param compass: bool, if True, MongoDB Compass will be installed.
+    :param db_tools: bool, if True, MongoDB Database Tools will be installed.
     :param force: bool, if True, MongoDB will be installed even if it is already installed.
     :return: int, 0 if successful, 1 if failed.
     """
@@ -155,8 +184,8 @@ def install_mongodb_win(
         console.print("Both 'rc' and 'latest' cannot be True at the same time.", style='red')
         return 1
 
-    if not (rc or latest) and not compass:
-        console.print("At least one of 'rc', 'latest', or 'compass' must be True.", style='red')
+    if not (rc or latest) and not compass and not db_tools:
+        console.print("At least one of 'rc', 'latest', 'compass' or 'db_tools' must be True.", style='red')
         return 1
 
     # If we need to install mongo db.
@@ -176,7 +205,7 @@ def install_mongodb_win(
         else:
             print("MongoDB is service is not running.")
 
-            mongo_is_installed: Union[str, None] = is_installed()
+            mongo_is_installed: str | None = is_installed()
             if is_installed():
                 message = f"MongoDB is installed in: {mongo_is_installed}\n" \
                           f"The service is not running. Fix the service or use the 'force' parameter to reinstall."
@@ -187,7 +216,7 @@ def install_mongodb_win(
 
         print("Fetching the latest MongoDB download URL...")
         mongo_installer_url = get_latest_mongodb_download_url(
-            platform='windows', rc_version=download_rc_version, major_specific=major)
+            platform='windows', rc_version=download_rc_version, major_specific=major, mongo_url_type='mongodb')
 
         print(f"Downloading MongoDB installer from: {mongo_installer_url}")
         installer_file_path: str = web.download(mongo_installer_url)
@@ -231,21 +260,60 @@ def install_mongodb_win(
             os.remove(installer_file_path)
             print("Cleaned up the installer file.")
 
-    if not compass:
-        return 0
+    if compass:
+        # It doesn't matter what you do with the MSI it will not install Compass, only if you run it manually.
+        # So we will use installation script from their GitHub.
+        print("Downloading MongoDB Compass installation script...")
+        compass_script_path: str = web.download(COMPASS_WIN_INSTALLATION_SCRIPT_URL)
 
-    # It doesn't matter what you do with the MSI it will not install Compass, only if you run it manually.
-    # So we will use installation script from their GitHub.
-    print("Downloading MongoDB Compass installation script...")
-    compass_script_path: str = web.download(COMPASS_WIN_INSTALLATION_SCRIPT_URL)
+        print("Installing MongoDB Compass from script...")
+        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", compass_script_path])
 
-    print("Installing MongoDB Compass from script...")
-    subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", compass_script_path])
+        # Clean up the installer file
+        if os.path.exists(compass_script_path):
+            os.remove(compass_script_path)
+            print("Cleaned up the Compass installer file.")
 
-    # Clean up the installer file
-    if os.path.exists(compass_script_path):
-        os.remove(compass_script_path)
-        print("Cleaned up the Compass installer file.")
+    if db_tools:
+        print("Fetching the latest MongoDB Database Tools download URL...")
+        mongo_db_tools_installer_url = get_latest_mongodb_download_url(
+            platform='windows', mongo_url_type='db_tools')
+
+        print(f"Downloading MongoDB Database Tools installer from: {mongo_db_tools_installer_url}")
+        installer_file_path: str = web.download(mongo_db_tools_installer_url)
+
+        print("Installing MongoDB Database Tools...")
+        try:
+            msis.run_msi(
+                install=True,
+                msi_path=installer_file_path,
+                silent_no_gui=True,
+                no_restart=True,
+                terminate_required_processes=True,
+                create_log_near_msi=True,
+                scan_log_for_errors=True,
+                # additional_args='ADDLOCAL="ServerService"'
+            )
+        except msis.MsiInstallationError as e:
+            console.print(f'{e} Exiting...', style='red')
+            return 1
+
+        is_tools_installed = is_db_tools_installed()
+        if not is_tools_installed:
+            message = "MongoDB Database Tools Executable not found.\n"
+            message += f"MSI Path: {installer_file_path}"
+            console.print(message, style='red')
+            return 1
+        else:
+            print(f"MongoDB Database Tools installed successfully to: {is_tools_installed}")
+            print("Not added to PATH automatically by the installer, please add it manually if needed.")
+
+        console.print("MongoDB installed successfully.", style='green')
+
+        # Clean up the installer file
+        if os.path.exists(installer_file_path):
+            os.remove(installer_file_path)
+            print("Cleaned up the installer file.")
 
     return 0
 # === EOF MONGODB WINDOWS INSTALLER ====================================================================================
@@ -285,7 +353,7 @@ def _detect_latest_major_for_ubuntu(
     Returns e.g. '8.0'.
     """
     # for m in range(max_major, min_major - 1, -1):
-    download_url: str = get_latest_mongodb_download_url(platform='ubuntu', major_specific=major)
+    download_url: str = get_latest_mongodb_download_url(platform='ubuntu', major_specific=major, mongo_url_type='mongodb')
     ubuntu_version: str = system.get_ubuntu_version().replace('.', '')
     _, version_with_suffix = download_url.split(f'ubuntu{ubuntu_version}-')
     version: str = version_with_suffix.rsplit('.', 2)[0]
@@ -440,6 +508,12 @@ def _make_parser():
         help='Install MongoDB Compass.'
     )
     parser.add_argument(
+        '-d', '--db-tools',
+        action='store_true',
+        help='Install MongoDB Database Tools (Only for Windows).'
+    )
+
+    parser.add_argument(
         '-f', '--force',
         action='store_true',
         help='Force the installation even if MongoDB is already installed.'
@@ -453,6 +527,7 @@ def main(
         rc: bool = False,
         major: str = None,
         compass: bool = False,
+        db_tools: bool = False,
         force: bool = False
 ) -> int:
     """
@@ -462,6 +537,7 @@ def main(
     :param rc: bool, if True, the latest RC version will be downloaded.
     :param major: str, if set, the latest version of the specified major version will be downloaded.
     :param compass: bool, if True, MongoDB Compass will be installed.
+    :param db_tools: bool, if True, MongoDB Database Tools will be installed (Windows only).
     :param force: bool, if True, MongoDB will be installed even if it is already installed.
     :return: int, 0 if successful, 1 if failed.
     """
@@ -469,8 +545,8 @@ def main(
     if latest + rc + (major is not None) > 1:
         console.print("Only one of the arguments can be set to True or provided: latest, rc, major.", style="red")
         return 1
-    if not latest and not rc and major is None and not compass:
-        console.print("At least one of the arguments must be set to True or provided: latest, rc, major, compass.", style="red")
+    if (latest + rc + (major is not None) + compass + db_tools) == 0:
+        console.print("At least one of the arguments must be set to True or provided: latest, rc, major, compass, db_tools.", style="red")
         return 1
 
     current_platform: str = system.get_platform()
@@ -483,14 +559,14 @@ def main(
     if current_platform == "debian":
         if force:
             console.print("On Debian, [force] argument currently is not applicable.", style="yellow", markup=False)
-        if rc:
-            console.print("On Debian, only [major], [compass] and [latest] arguments is implemented; [rc] argument isn't available.", style="red", markup=False)
+        if rc or db_tools:
+            console.print("On Debian, only [major], [compass] and [latest] arguments are implemented; [rc] and [db_tools] arguments aren't available.", style="red", markup=False)
             return 1
         result_code: int = install_mongodb_ubuntu(latest, major, compass)
         if result_code != 0:
             return result_code
     elif current_platform == "windows":
-        result_code: int = install_mongodb_win(latest, rc, major, compass, force)
+        result_code: int = install_mongodb_win(latest, rc, major, compass, db_tools, force)
         if result_code != 0:
             return result_code
     else:
