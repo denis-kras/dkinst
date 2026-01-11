@@ -30,6 +30,7 @@ class MongoDB(_base.BaseInstaller):
         return mongodb_installer.main(
             latest=True,
             compass=True,
+            db_tools=True,
             force=force
         )
 

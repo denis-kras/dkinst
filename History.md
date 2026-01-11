@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.18 - 11.01.2026
+  * Some code cleanup.
 * 0.37.17 - 08.01.2026
   * MongoDB installer - added DB Tools installation (Windows).
 * 0.37.16 - 07.01.2026

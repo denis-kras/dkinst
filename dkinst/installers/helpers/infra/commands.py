@@ -11,7 +11,20 @@ from rich.console import Console
 console = Console()
 
 
-def run_package_manager_command(cmd: list[str], action: str) -> tuple[int, str]:
+def run_command_stream_and_return_output(
+        cmd: list[str],
+) -> tuple[int, str]:
+    """
+    Run a command as a subprocess, streaming its output to the console
+    in real-time, and capturing the output for later use.
+
+    Args:
+        cmd (list[str]): The command and its arguments to run.
+
+    Returns:
+        tuple[int, str]: A tuple containing the return code and the captured output.
+    """
+
     try:
         process = subprocess.Popen(
             cmd,
@@ -22,8 +35,9 @@ def run_package_manager_command(cmd: list[str], action: str) -> tuple[int, str]:
             close_fds=True,     # IMPORTANT: reduces inherited handles (esp. helpful on Windows)
         )
     except FileNotFoundError:
-        console.print(f"[red]{cmd[0]} is not installed or not in PATH.[/red]")
-        return 1, ""
+        message = f'FileNotFoundError: {cmd[0]} is not installed or not in PATH.'
+        console.print(f"[red]{message}[/red]")
+        return 1, message
 
     assert process.stdout is not None
 
@@ -67,11 +81,11 @@ def run_package_manager_command(cmd: list[str], action: str) -> tuple[int, str]:
         if chunk is None:
             break
 
-        # 1) Stream raw bytes (preserves \r progress behavior)
+        # Stream raw bytes (preserves \r progress behavior)
         sys.stdout.buffer.write(chunk)
         sys.stdout.buffer.flush()
 
-        # 2) Capture decoded text safely (incremental decoding)
+        # Capture decoded text safely (incremental decoding)
         captured_parts.append(decoder.decode(chunk))
 
     captured_parts.append(decoder.decode(b"", final=True))
@@ -79,12 +93,23 @@ def run_package_manager_command(cmd: list[str], action: str) -> tuple[int, str]:
     returncode = process.wait()
     output = "".join(captured_parts)
 
-    if returncode != 0:
-        console.print(
-            f"\n[red]{action} failed with exit code {returncode}. "
-            "See output above for details.[/red]"
-        )
-    else:
-        console.print(f"\n[green]{action} completed successfully.[/green]")
-
     return returncode, output
+
+
+def run_package_manager_command(
+        cmd: list[str],
+        action: str,
+        verbose: bool = False,
+) -> tuple[int, str]:
+    rc, output = run_command_stream_and_return_output(cmd)
+
+    if verbose:
+        if rc != 0:
+            console.print(
+                f"\n[red]{action} failed with exit code {rc}. "
+                "See output above for details.[/red]"
+            )
+        else:
+            console.print(f"\n[green]{action} completed successfully.[/green]")
+
+    return rc, output

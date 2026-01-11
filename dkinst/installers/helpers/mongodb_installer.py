@@ -17,13 +17,14 @@ from atomicshop.permissions import ubuntu_permissions
 if os.name == 'nt':
     from atomicshop import get_process_list
 
-from .infra import system, msis, permissions
+from .infra import system, msis, permissions, files
 
 
 console = Console()
 
 
-VERSION: str = "1.0.0"
+VERSION: str = "1.1.0"
+# Added db tools installation on Windows.
 
 
 def get_latest_mongodb_download_url(
@@ -148,7 +149,7 @@ def is_installed() -> Union[str, None]:
     :return: string if MongoDB executable is found, None otherwise.
     """
 
-    return system.find_file(MONGODB_EXE_NAME, WHERE_TO_SEARCH_FOR_MONGODB_EXE)
+    return files.find_file(MONGODB_EXE_NAME, WHERE_TO_SEARCH_FOR_MONGODB_EXE)
 
 
 def is_db_tools_installed() -> Union[str, None]:
@@ -157,7 +158,7 @@ def is_db_tools_installed() -> Union[str, None]:
     :return: string if MongoDB Database Tools executable is found, None otherwise.
     """
 
-    return system.find_file(MONGO_DUMP_EXE_NAME, WHERE_TO_SEARCH_FOR_MONGODUMP_EXE)
+    return files.find_file(MONGO_DUMP_EXE_NAME, WHERE_TO_SEARCH_FOR_MONGODUMP_EXE)
 
 
 def install_mongodb_win(
