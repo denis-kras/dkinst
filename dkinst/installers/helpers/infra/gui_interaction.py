@@ -1,9 +1,11 @@
 import re
+import os
 import time
 from typing import Optional, Union
 
-from pywinauto import Desktop
-from pywinauto.base_wrapper import BaseWrapper
+if os.name == "nt":
+    from pywinauto import Desktop
+    from pywinauto.base_wrapper import BaseWrapper
 
 TitleType = Union[str, re.Pattern]
 
