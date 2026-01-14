@@ -5,6 +5,8 @@ import sys
 
 if os.name == "nt":
     import winreg
+else:
+    winreg = None  # type: ignore
 
 
 HKLM = winreg.HKEY_LOCAL_MACHINE
