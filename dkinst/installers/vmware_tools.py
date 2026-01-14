@@ -50,7 +50,7 @@ sudo apt install -y open-vm-tools open-vm-tools-desktop
 
     result_code: int = ubuntu_terminal.start_enable_service_check_availability(
         "open-vm-tools",
-        enable_service_bool=False, start_service_bool=False, check_service_running=True)
+        enable_service_bool=True, start_service_bool=True, check_service_running=True)
     if result_code != 0:
         return result_code
 
