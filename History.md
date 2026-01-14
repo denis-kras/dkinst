@@ -1,7 +1,7 @@
 <!-- HISTORY -->
 ## History
 
-* 0.37.19-22 - 14.01.2026
+* 0.37.19-23 - 14.01.2026
   * Fixed win helpers access error on ubuntu.
 * 0.37.18 - 11.01.2026
   * Some code cleanup.

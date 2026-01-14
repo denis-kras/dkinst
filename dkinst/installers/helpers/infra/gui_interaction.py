@@ -6,6 +6,8 @@ from typing import Optional, Union
 if os.name == "nt":
     from pywinauto import Desktop
     from pywinauto.base_wrapper import BaseWrapper
+else:
+    BaseWrapper = None
 
 TitleType = Union[str, re.Pattern]
 
