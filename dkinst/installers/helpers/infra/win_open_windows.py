@@ -8,36 +8,37 @@ import psutil
 from .printing import printc
 
 
-user32 = ctypes.windll.user32
+if os.name == "nt":
+    user32 = ctypes.windll.user32
 
-EnumWindows = user32.EnumWindows
-GetWindowTextLengthW = user32.GetWindowTextLengthW
-GetWindowTextW = user32.GetWindowTextW
-IsWindowVisible = user32.IsWindowVisible
-GetWindowThreadProcessId = user32.GetWindowThreadProcessId
-PostMessageW = user32.PostMessageW
+    EnumWindows = user32.EnumWindows
+    GetWindowTextLengthW = user32.GetWindowTextLengthW
+    GetWindowTextW = user32.GetWindowTextW
+    IsWindowVisible = user32.IsWindowVisible
+    GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+    PostMessageW = user32.PostMessageW
 
-EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
 
-WM_CLOSE = 0x0010
+    WM_CLOSE = 0x0010
 
-dwmapi = ctypes.windll.dwmapi  # Desktop Window Manager API (Vista+)
+    dwmapi = ctypes.windll.dwmapi  # Desktop Window Manager API (Vista+)
 
-DWMWA_CLOAKED = 14  # DwmGetWindowAttribute attribute for cloaked windows
+    DWMWA_CLOAKED = 14  # DwmGetWindowAttribute attribute for cloaked windows
 
-# Get our own console window handle so we can skip it
-kernel32 = ctypes.windll.kernel32
-kernel32.GetConsoleWindow.restype = wintypes.HWND
-CURRENT_CONSOLE_HWND = kernel32.GetConsoleWindow()
+    # Get our own console window handle so we can skip it
+    kernel32 = ctypes.windll.kernel32
+    kernel32.GetConsoleWindow.restype = wintypes.HWND
+    CURRENT_CONSOLE_HWND = kernel32.GetConsoleWindow()
 
 
-class RECT(ctypes.Structure):
-    _fields_ = [
-        ("left",   wintypes.LONG),
-        ("top",    wintypes.LONG),
-        ("right",  wintypes.LONG),
-        ("bottom", wintypes.LONG),
-    ]
+    class RECT(ctypes.Structure):
+        _fields_ = [
+            ("left",   wintypes.LONG),
+            ("top",    wintypes.LONG),
+            ("right",  wintypes.LONG),
+            ("bottom", wintypes.LONG),
+        ]
 
 
 """
