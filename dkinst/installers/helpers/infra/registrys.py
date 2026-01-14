@@ -5,15 +5,12 @@ import sys
 
 if os.name == "nt":
     import winreg
-else:
-    winreg = None  # type: ignore
 
-
-HKLM = winreg.HKEY_LOCAL_MACHINE
-ACCESS_READ = winreg.KEY_READ | winreg.KEY_WOW64_64KEY
-ACCESS_WRITE = (
-    winreg.KEY_SET_VALUE | winreg.KEY_CREATE_SUB_KEY | winreg.KEY_WOW64_64KEY
-)
+    HKLM = winreg.HKEY_LOCAL_MACHINE
+    ACCESS_READ = winreg.KEY_READ | winreg.KEY_WOW64_64KEY
+    ACCESS_WRITE = (
+        winreg.KEY_SET_VALUE | winreg.KEY_CREATE_SUB_KEY | winreg.KEY_WOW64_64KEY
+    )
 
 
 def set_policy_dword(
