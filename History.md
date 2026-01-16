@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.25 - 16.01.2026
+  * NodeJS Ubuntu installer fix.
 * 0.37.24 - 14.01.2026
   * VMWare Tools fix on Ubuntu.
 * 0.37.19-23 - 14.01.2026

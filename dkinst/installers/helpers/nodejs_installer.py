@@ -245,25 +245,21 @@ def install_npm_package_ubuntu(package_name: str, sudo: bool = True):
 
 
 def is_nodejs_installed_ubuntu():
-    """
-    The function will check if Node.js is installed.
-    :return: bool.
-    """
-
     try:
-        # Run the command 'node -v'
-        result = subprocess.run(['node', '-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-        # Check if the command was successful
+        result = subprocess.run(
+            ['node', '-v'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         if result.returncode == 0:
-            message = f"Node.js installed. Version: {result.stdout.strip()}"
-            console.print(message, style='green')
+            console.print(f"Node.js installed. Version: {result.stdout.strip()}", style='green')
             return True
-        else:
-            print("Node.js is not installed.")
-            return False
-    except FileNotFoundError:
-        print("Node command not found. Node.js is not installed.")
+        print("Node.js is not installed.")
+        return False
+
+    except (FileNotFoundError, PermissionError):
+        print("Node command not runnable (missing or not executable). Node.js is not installed.")
         return False
 
 
