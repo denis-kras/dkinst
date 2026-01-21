@@ -105,6 +105,15 @@ def _installer_name_completer(prefix, parsed_args, **kwargs):
     return [n for n in names if n.startswith(prefix)]
 
 
+def _available_scope_or_prefix_completer(prefix, parsed_args, **kwargs):
+    """
+    Completion for `dkinst available ...`.
+    Supports both: `all` and installer name prefixes.
+    """
+    candidates = ["all"] + [i.name for i in _get_installers()]
+    return [c for c in candidates if c.startswith(prefix)]
+
+
 def _get_installers() -> list[BaseInstaller]:
     """get list of tuples (name, instance) for every subclass found in dkinst.installers.*"""
     # import every *.py file so its classes are defined
@@ -122,8 +131,14 @@ def _get_installers() -> list[BaseInstaller]:
     return installers_list
 
 
-def cmd_available(prefix: str | None = None) -> None:
-    """List every known installer with metadata.
+def cmd_available(
+        prefix: str | None = None,
+        show_all: bool = False
+) -> None:
+    """List known installers with metadata.
+
+    By default, only installers that support the current platform are shown.
+    Pass show_all=True to list installers for all platforms.
 
     If `prefix` is provided, only installers whose name starts with that prefix
     (case-insensitive) are shown.
@@ -136,6 +151,17 @@ def cmd_available(prefix: str | None = None) -> None:
 
     installers_list: list[BaseInstaller] = _get_installers()
 
+    # Ensure platforms are initialized before filtering/printing
+    for inst in installers_list:
+        inst._platforms_known()
+
+    if not show_all:
+        current_platform = system.get_platform()
+        installers_list = [
+            inst for inst in installers_list
+            if current_platform in inst.platforms
+        ]
+
     if prefix:
         p = prefix.lower()
         installers_list = [
@@ -143,10 +169,8 @@ def cmd_available(prefix: str | None = None) -> None:
             if inst.name.lower().startswith(p)
         ]
 
-    methods: list[str]
     for installer in installers_list:
         methods = _base.get_known_methods(installer)
-
         manual_args = _base._extract_helper_args(installer, methods)
         table.add_row(
             installer.name,
@@ -558,8 +582,18 @@ def _dispatch(
         return 0
 
     if namespace.sub == "available":
-        prefix = getattr(namespace, "name_prefix", None)
-        cmd_available(prefix)
+        scope_or_prefix = getattr(namespace, "scope_or_prefix", None)
+
+        show_all = False
+        prefix = None
+
+        if scope_or_prefix:
+            if str(scope_or_prefix).lower() == "all":
+                show_all = True
+            else:
+                prefix = scope_or_prefix
+
+        cmd_available(prefix=prefix, show_all=show_all)
         return 0
 
     if namespace.sub == "edit-config":
@@ -703,8 +737,10 @@ def _make_parser() -> argparse.ArgumentParser:
         "  manual <installer> help      Show help for manual arguments of the helper script.\n"
         "       m <installer>            (alias for manual)\n"
         "\n"
-        "  available                    List all available installers.\n"
+        "  available                    List installers available for the current platform.\n"
+        "  available all                List installers for all platforms.\n"
         "       a                       (alias for available)\n"
+        "       a all                   (example with alias for available all)\n"
         "  edit-config                  Open the configuration file in the default editor.\n"
         "                               You can change the base installation path here.\n"
         "  prereqs                      Install prerequisites for dkinst. Run this after installing or updating dkinst.\n"
@@ -762,13 +798,12 @@ def _make_parser() -> argparse.ArgumentParser:
         sc.add_argument("installer_args", nargs=argparse.REMAINDER)
 
     available_parser = sub.add_parser("available")
-    available_prefix_arg = available_parser.add_argument(
-        "name_prefix",
+    available_arg = available_parser.add_argument(
+        "scope_or_prefix",
         nargs="?",
-        help="optional prefix to filter installer names (e.g. 'to' shows installers starting with 'to')",
+        help="optional: 'all' to show installers for all platforms, or a name prefix to filter installer names",
     )
-    # Optional: enable completion of installer names for the prefix
-    available_prefix_arg.completer = _installer_name_completer
+    available_arg.completer = _available_scope_or_prefix_completer
 
     sub.add_parser("edit-config")
     sub.add_parser("prereqs")

@@ -13,7 +13,7 @@ from rich.console import Console
 
 from atomicshop import web
 
-from .infra import permissions, gui_interaction
+from .infra import permissions
 
 
 console = Console()
@@ -157,6 +157,9 @@ def install_npcap(
         - Some installers spawn child processes and exit early; if that happens,
           we can add a more advanced wait strategy. (Npcap typically does not.)
         """
+
+        from .infra import gui_interaction
+
         cmd = [file_path]
         proc = subprocess.Popen(cmd)
 
