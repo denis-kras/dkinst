@@ -13,8 +13,8 @@ from .infra import permissions, msis, system
 console = Console()
 
 
-VERSION: str = "1.0.1"
-"""updated verbosity on version check"""
+VERSION: str = "1.0.2"
+"""updated package installer"""
 
 
 # === WINDOWS FUNCTIONS ================================================================================================
@@ -232,16 +232,27 @@ def install_npm_package_ubuntu(package_name: str, sudo: bool = True):
     :return:
     """
 
-    # Check if Node.js is installed.
     if not is_nodejs_installed_ubuntu():
         return
 
-    command = f"npm install -g {package_name}"
-
+    cmd = ["npm", "install", "-g", package_name]
     if sudo:
-        command = f"sudo {command}"
+        cmd.insert(0, "sudo")
 
-    _ = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+    try:
+        res = subprocess.run(
+            cmd,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # combine stderr into stdout
+            text=True,
+        )
+        # optional: console.print(res.stdout, style="green")
+        return res.stdout
+    except subprocess.CalledProcessError as e:
+        console.print(f"Command failed (exit {e.returncode}): {' '.join(e.cmd)}", style="red")
+        console.print(e.stdout or "<no output captured>", style="red")
+        raise
 
 
 def is_nodejs_installed_ubuntu():

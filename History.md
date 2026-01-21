@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.37.26 - 21.01.2026
+  * NodeJS npm package installer fix (Ubuntu).
 * 0.37.25 - 16.01.2026
   * NodeJS Ubuntu installer fix.
 * 0.37.24 - 14.01.2026
