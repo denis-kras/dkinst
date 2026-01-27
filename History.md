@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.38.1 - 27.01.2026
+  * Added ClamAV installer (Ubuntu).
+  * Added CrowdSec installer (Ubuntu).
 * 0.38.0 - 21.01.2026
   * Added 'all' argument to 'available' method.
 * 0.37.26 - 21.01.2026

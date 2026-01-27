@@ -411,7 +411,7 @@ def _require_admin_if_needed(
     if permissions.is_admin():
         return 0
 
-    console.print('This action requires administrator privileges.', style='red')
+    console.print('This action requires administrator privileges. Upgrading...', style='yellow')
 
     if current_platform == 'debian':
         # Auto-elevate; this never returns on success
