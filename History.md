@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.38.2 - 10.02.2026
+  * Fixed interactive mode admin upgrade.
 * 0.38.1 - 27.01.2026
   * Added ClamAV installer (Ubuntu).
   * Added CrowdSec installer (Ubuntu).

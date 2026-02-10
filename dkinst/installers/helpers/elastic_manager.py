@@ -6,10 +6,9 @@ import time
 
 from rich.console import Console
 
-from atomicshop.wrappers import ubuntu_terminal
 from atomicshop import process
 
-from .infra import permissions
+from .infra import permissions, ubuntu_terminal
 
 
 console = Console()

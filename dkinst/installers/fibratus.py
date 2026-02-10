@@ -6,7 +6,6 @@ import time
 from typing import Literal
 
 from atomicshop.wrappers import githubw
-from atomicshop import filesystem
 
 from . import _base
 from .helpers.infra import msis
@@ -45,7 +44,6 @@ class Fibratus(_base.BaseInstaller):
 
 def install_function(
         installation_file_download_directory: str = None,
-        place_to_download_file: Literal['working', 'temp', 'script'] = 'temp',
         remove_file_after_installation: bool = True
 ) -> int:
     """
@@ -60,9 +58,12 @@ def install_function(
     :return:
     """
 
+    # Get temporary download directory if not specified
     if not installation_file_download_directory:
-        installation_file_download_directory = filesystem.get_download_directory(
-            place=place_to_download_file, script_path=__file__)
+        # Get the temporary directory in 8.3 format
+        short_temp_dir = tempfile.gettempdir()
+        # Convert to the long path name
+        installation_file_download_directory = str(Path(short_temp_dir).resolve())
 
     github_wrapper = githubw.GitHubWrapper(user_name='rabbitstack', repo_name='fibratus')
     fibratus_setup_file_path: str = github_wrapper.download_latest_release(
@@ -106,6 +107,7 @@ def install_function(
     time.sleep(5)
 
     if remove_file_after_installation:
-        filesystem.remove_file(fibratus_setup_file_path)
+        os.remove(fibratus_setup_file_path)
+        print_api.print_api(f'File Removed: {fibratus_setup_file_path}')
 
     return 0

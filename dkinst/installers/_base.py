@@ -40,7 +40,9 @@ class BaseInstaller:
 
         # The dict of platforms that require admin rights to install this application.
         # Off course, it should be a subset of self.platforms.
-        # Example: {"windows": ["install", "upgrade"], "debian": ["install"]}
+        # Examples:
+        # {"windows": ["install", "upgrade"], "debian": ["install"]}
+        # {"debian": ["install"]}
         # Admin rights are required for windows with methods of "install" and "upgrade", and for debian with method of "install" only.
         self.admins: dict = {}
 

@@ -11,13 +11,11 @@ from typing import Literal
 from rich.console import Console
 
 from atomicshop import urls, web
-from atomicshop.wrappers import ubuntu_terminal
-from atomicshop.permissions import ubuntu_permissions
 
 if os.name == 'nt':
     from atomicshop import get_process_list
 
-from .infra import system, msis, permissions, files
+from .infra import system, msis, permissions, files, ubuntu_permissions, ubuntu_terminal
 
 
 console = Console()

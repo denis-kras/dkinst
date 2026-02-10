@@ -9,9 +9,9 @@ import argparse
 
 from rich.console import Console
 
-from atomicshop import process, filesystem
-from atomicshop.permissions import permissions, ubuntu_permissions
-from atomicshop.wrappers import ubuntu_terminal
+from atomicshop import process
+
+from .infra import permissions, ubuntu_permissions, ubuntu_terminal
 
 
 console = Console()
@@ -92,19 +92,6 @@ def install_docker_ubuntu(
     :param add_current_user_to_docker_group_bool: bool, if True, the current user will be added to the docker group.
         So the user will be able to run the 'docker' command without sudo. If you install docker in rootless mode
         this is not needed.
-
-    Usage in main.py (run with sudo):
-        import sys
-        from atomicshop.wrappers.dockerw import install_docker
-
-
-        def main():
-            execution_result: int = install_docker.install_docker_ubuntu()
-            return execution_result
-
-
-        if __name__ == '__main__':
-            sys.exit(main())
     """
 
     if rootless and permissions.is_admin():
@@ -125,11 +112,12 @@ def install_docker_ubuntu(
         # subprocess.run("curl -fsSL https://get.docker.com | sh", shell=True, check=True)
         # process.execute_script('curl -fsSL https://get.docker.com -o get-docker.sh', shell=True)
         # process.execute_script('sh get-docker.sh', shell=True)
-        # filesystem.remove_file('get-docker.sh')
+        # os.remove('get-docker.sh')
     else:
         # Remove the existing keyrings, so we will not be asked to overwrite it if it exists.
         docker_keyring_file_path: str = "/etc/apt/keyrings/docker.gpg"
-        filesystem.remove_file(docker_keyring_file_path)
+        os.remove(docker_keyring_file_path)
+        print(f'Removed existing Docker keyring at: {docker_keyring_file_path}')
 
         script = f"""
         # Step 1: Set up Docker's apt repository

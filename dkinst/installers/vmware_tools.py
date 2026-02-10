@@ -5,9 +5,7 @@ from typing import Literal
 from rich.console import Console
 
 from . import _base
-from .helpers.infra import system
-
-from atomicshop.wrappers import ubuntu_terminal
+from .helpers.infra import system, ubuntu_terminal
 
 
 console = Console()

@@ -15,6 +15,7 @@ class GoogleChrome(_base.BaseInstaller):
         self.description: str = "Google Chrome Installer"
         self.version: str = "1.0.0"
         self.platforms: list = ["debian"]
+        self.admins: dict = {"debian": ["install"]}
 
     def install(
             self,

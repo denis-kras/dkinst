@@ -8,6 +8,9 @@ import subprocess
 import os
 from typing import Literal
 import shlex
+import json
+import tempfile
+import time
 
 from rich.console import Console
 from rich.table import Table
@@ -27,6 +30,10 @@ console = Console()
 
 VERSION: str = __version__
 
+_ELEVATE_BOOTSTRAP_ENV = "DKINST_ELEVATE_BOOTSTRAP_ARGV"
+_ELEVATE_BOOTSTRAP_FILE = str(Path(tempfile.gettempdir()) / "dkinst_elevate_bootstrap.json")
+_ELEVATE_BOOTSTRAP_FILE_MAX_AGE_SEC = 10 * 60
+
 
 # Short aliases for top-level commands
 COMMAND_ALIASES: dict[str, str] = {
@@ -37,6 +44,86 @@ COMMAND_ALIASES: dict[str, str] = {
     "a": "available",
     "h": "help",
 }
+
+
+def _write_elevate_bootstrap(argv: list[str]) -> None:
+    """Best-effort: persist bootstrap argv for an elevated re-exec on Windows.
+
+    We prefer env var bootstrap, but UAC relaunch paths don't always inherit the
+    parent process environment. A temp-file fallback makes the bootstrap robust.
+    """
+    try:
+        payload = {"ts": time.time(), "argv": argv}
+        Path(_ELEVATE_BOOTSTRAP_FILE).write_text(json.dumps(payload), encoding="utf-8")
+    except Exception:
+        # Best-effort only.
+        pass
+
+
+def _pop_elevate_bootstrap() -> list[str] | None:
+    """Pop a bootstrap argv for interactive-mode startup.
+
+    Sources (in priority order):
+      1) env var (fast path)
+      2) temp-file fallback (robust across UAC relaunch mechanisms)
+    """
+    # Fast path: env var bootstrap.
+    bootstrap_raw = os.environ.pop(_ELEVATE_BOOTSTRAP_ENV, None)
+    if bootstrap_raw:
+        try:
+            argv = json.loads(bootstrap_raw)
+            if (
+                    isinstance(argv, list)
+                    and all(isinstance(x, str) for x in argv)
+            ):
+                return argv
+            raise ValueError("bootstrap argv must be a list[str]")
+        except Exception:
+            console.print(
+                f"Invalid {_ELEVATE_BOOTSTRAP_ENV} value; ignoring.",
+                style="yellow",
+                markup=False,
+            )
+
+    # Fallback: temp file (Windows-only to avoid surprises on other platforms).
+    if system.get_platform() != "windows":
+        return None
+
+    p = Path(_ELEVATE_BOOTSTRAP_FILE)
+    if not p.exists():
+        return None
+
+    try:
+        raw = p.read_text(encoding="utf-8")
+        data = json.loads(raw)
+    except Exception:
+        # Don't keep retrying a corrupt file.
+        try:
+            p.unlink()
+        except Exception:
+            pass
+        return None
+    finally:
+        # One-shot semantics: delete after read attempt.
+        try:
+            p.unlink()
+        except Exception:
+            pass
+
+    # Accept both legacy "list[str]" and the newer dict payload.
+    if isinstance(data, list) and all(isinstance(x, str) for x in data):
+        return data
+
+    if isinstance(data, dict):
+        ts = data.get("ts", None)
+        argv = data.get("argv", None)
+        if isinstance(ts, (int, float)):
+            if (time.time() - float(ts)) > _ELEVATE_BOOTSTRAP_FILE_MAX_AGE_SEC:
+                return None
+        if isinstance(argv, list) and all(isinstance(x, str) for x in argv):
+            return argv
+
+    return None
 
 
 def _normalize_argv(argv: list[str]) -> list[str]:
@@ -188,6 +275,7 @@ def _run_dependencies(
     method: Literal["install", "uninstall", "upgrade"] = "install",
     done: set[str] | None = None,
     stack: list[str] | None = None,
+    top_level_reexec_argv: list[str] | None = None,
 ) -> tuple[int, set[str]]:
     """
     Recursively resolve `installer.dependencies` (list of installer names or
@@ -204,6 +292,8 @@ def _run_dependencies(
     :param method: The method for which dependencies are being resolved.
     :param done: Set of already installed dependency names.
     :param stack: Current dependency resolution stack (for circular dep detection).
+    :param top_level_reexec_argv: If provided, the original argv of the top-level command that triggered this resolution.
+        This is used for re-execing with elevated privileges on platforms that require it.
 
     :return: (return code, set of installed dependency names)
     """
@@ -302,14 +392,17 @@ def _run_dependencies(
             continue
 
         # Admin check for the dependency if required on this platform.
-        rc = _require_admin_if_needed(dep_inst, method=dep_method_name)
+        reexec = top_level_reexec_argv or [dep_method_name, dep_inst.name]
+        rc = _require_admin_if_needed(dep_inst, method=dep_method_name, reexec_argv=reexec)
         if rc != 0:
             return rc, done
 
         # Recurse first so deep deps resolve in correct order. We keep passing
         # the *top-level* method ("install"/"upgrade") so all transitive
         # dependencies follow the same policy.
-        rc, _ = _run_dependencies(dep_inst, installers_map, method, done, stack + [dep_name])
+        rc, _ = _run_dependencies(
+            dep_inst, installers_map, method, done, stack + [dep_name],
+            top_level_reexec_argv=top_level_reexec_argv)
         if rc != 0:
             return rc, done
 
@@ -361,10 +454,15 @@ def _run_dependencies(
 
 def _require_admin_if_needed(
         installer: BaseInstaller,
-        method: Literal["install", "uninstall", "upgrade"] = "install"
+        method: Literal["install", "uninstall", "upgrade"] = "install",
+        reexec_argv: list[str] | None = None,
 ) -> int:
     """
     Enforce admin privileges when requested by the installer.
+
+    If we need to elevate on Windows while currently running with no CLI args
+    (interactive mode), we stash the attempted argv in an env var so the elevated
+    session can execute it automatically before entering interactive mode.
 
     installer.admins can be:
 
@@ -394,12 +492,7 @@ def _require_admin_if_needed(
             methods_for_platform = [methods_for_platform]
         methods_for_platform = [m.lower() for m in methods_for_platform]
 
-        if method.lower() in methods_for_platform:
-            needs_admin = True
-
-    elif isinstance(admins, (list, tuple, set)):
-        # Legacy style: list of platforms where all methods need admin
-        if current_platform in admins:
+        if str(method).lower() in methods_for_platform:
             needs_admin = True
     else:
         raise ValueError(f"installer.admins has unsupported type: {type(admins)}")
@@ -422,9 +515,28 @@ def _require_admin_if_needed(
         if venv:
             print(f'Try: sudo "{venv}/bin/dkinst" {method} {installer.name}')
     elif current_platform == 'windows':
+        # If we're about to re-launch into an elevated *interactive* session (no args),
+        # bootstrap it by telling the elevated process what to run first.
+        if reexec_argv and (len(sys.argv) <= 1) and _ELEVATE_BOOTSTRAP_ENV not in os.environ:
+            try:
+                os.environ[_ELEVATE_BOOTSTRAP_ENV] = json.dumps(reexec_argv)
+            except Exception:
+                pass
+
+        if reexec_argv and (len(sys.argv) <= 1):
+            _write_elevate_bootstrap(reexec_argv)
+
         print("Will try to relaunch with elevated privileges...")
         # Auto-elevate via UAC; this will exit on success
         permissions.ensure_admin_or_reexec_windows()
+
+        # If we get here, elevation failed or was cancelled. Clean up any bootstrap file
+        # so a later elevated interactive start doesn't accidentally replay it.
+        try:
+            Path(_ELEVATE_BOOTSTRAP_FILE).unlink()
+        except Exception:
+            pass
+
         # If we get here, elevation failed or was cancelled
         console.print(
             "You can also rerun this command from an elevated PowerShell or CMD.",
@@ -641,7 +753,8 @@ def _dispatch(
 
             # Enforce admin privileges for this method when requested, unless the user is just asking for help.
             if 'help' not in extras:
-                rc = _require_admin_if_needed(inst, method)
+                attempted_argv = [str(method), inst.name, *extras]
+                rc = _require_admin_if_needed(inst, method, reexec_argv=attempted_argv)
                 if rc != 0:
                     return rc
 
@@ -692,7 +805,13 @@ def _dispatch(
 
             # For 'install' and 'upgrade', resolve dependencies first
             if method in ("install", "upgrade"):
-                rc, all_dependencies = _run_dependencies(inst, installers_map, method=method)
+                attempted_argv = [str(method), inst.name, *extras]
+                rc, all_dependencies = _run_dependencies(
+                    inst,
+                    installers_map,
+                    method=method,
+                    top_level_reexec_argv=attempted_argv,
+                )
                 if rc != 0:
                     return rc
 
@@ -836,8 +955,39 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-        # If no arguments, enter interactive console instead of printing help
+    # If no arguments, enter interactive console instead of printing help
     if not argv:
+        bootstrap_argv = _pop_elevate_bootstrap()
+        if bootstrap_argv:
+            bootstrap_argv = _normalize_argv(bootstrap_argv)
+
+            try:
+                namespace = parser.parse_args(bootstrap_argv)
+            except SystemExit:
+                folders.remove_empty_portable_folders()
+                return 2
+
+            rc = _dispatch(namespace, parser)
+            if rc is None:
+                console.print(
+                    "Internal error: command did not return an exit code.",
+                    style="red",
+                    markup=False,
+                )
+                folders.remove_empty_portable_folders()
+                return 1
+            if not isinstance(rc, int):
+                console.print(
+                    f"Internal error: command returned invalid exit code: {rc!r}",
+                    style="red",
+                    markup=False,
+                )
+                folders.remove_empty_portable_folders()
+                return 1
+            if rc != 0:
+                folders.remove_empty_portable_folders()
+                return rc
+
         rc: int = _interactive_console(parser)
         folders.remove_empty_portable_folders()
         return rc
