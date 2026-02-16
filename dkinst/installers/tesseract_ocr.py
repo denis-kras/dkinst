@@ -20,6 +20,7 @@ class TesseractOCR(_base.BaseInstaller):
         self.version: str = tesseract_ocr_manager.VERSION
         self.platforms: list = ["windows"]
         self.helper: ModuleType = tesseract_ocr_manager
+        self.admins: dict = {"windows": ["install", "upgrade"]}
 
         self.dependencies: list[str] = ['vs_build_tools_2022', 'git']
 
