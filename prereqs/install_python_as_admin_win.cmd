@@ -1,5 +1,5 @@
-:: Version 1.2.2
-:: Download installer to %TEMP%, execute, then remove it (cleanup even on failure)
+:: Version 1.2.3
+:: Fixed basic string on invoke
 @echo off
 setlocal
 
@@ -91,7 +91,7 @@ for /f "usebackq delims=" %%I in (`^
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $ProgressPreference='SilentlyContinue';" ^
     "$url = 'https://www.python.org/ftp/python/';" ^
-    "$page = Invoke-WebRequest -Uri $url;" ^
+    "$page = Invoke-WebRequest -Uri $url -UseBasicParsing;" ^
     "$versions = $page.Links | Where-Object { $_.href -match '^\d+\.\d+\.\d+/$' } | ForEach-Object { $_.href.TrimEnd('/') };" ^
     "$latest_version = ($versions | Where-Object { $_ -like '%PYTHON_MAJOR_MINOR%.*' }) | Sort-Object { [version]$_ } -Descending | Select-Object -First 1;" ^
     "Write-Output $latest_version"^
@@ -165,7 +165,7 @@ if "%INSTALLER_URL%"=="" (
 
 echo Downloading the installer from %INSTALLER_URL%...
 echo To: "%PYINSTALLER%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%INSTALLER_URL%' -OutFile '%PYINSTALLER%'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%INSTALLER_URL%' -OutFile '%PYINSTALLER%' -UseBasicParsing"
 set "DL_RC=%ERRORLEVEL%"
 if not "%DL_RC%"=="0" (
     echo Download failed with code %DL_RC%.
