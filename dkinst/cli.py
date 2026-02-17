@@ -14,15 +14,19 @@ import time
 
 from rich.console import Console
 from rich.table import Table
-import argcomplete
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion
+
+try:
+    import argcomplete
+except ImportError:  # pragma: no cover
+    argcomplete = None
 
 from . import __version__
 from .installers._base import BaseInstaller
 from .installers import _base
 from . import installers
-from .installers.helpers.infra import system, permissions, prereqs, prereqs_uninstall, folders
+from .installers.helpers.infra import system, permissions, folders
 
 
 console = Console()
@@ -714,10 +718,12 @@ def _dispatch(
         return 0
 
     if namespace.sub == "prereqs":
-        return prereqs._cmd_prereqs()
+        from .installers.helpers.infra import prereqs_mod
+        return prereqs_mod._cmd_prereqs()
 
     if namespace.sub == "prereqs-uninstall":
-        return prereqs_uninstall._cmd_uninstall_prereqs()
+        from .installers.helpers.infra import prereqs_uninstall
+        return prereqs_uninstall_mod._cmd_uninstall_prereqs()
 
     # Methods from the Known Methods list
     if namespace.sub in _base.ALL_METHODS:
@@ -929,7 +935,8 @@ def _make_parser() -> argparse.ArgumentParser:
     sub.add_parser("prereqs-uninstall")
     sub.add_parser("help")
 
-    argcomplete.autocomplete(parser)
+    if argcomplete is not None:
+        argcomplete.autocomplete(parser)
 
     return parser
 

@@ -7,7 +7,7 @@ import shutil
 
 from rich.console import Console
 
-from . import prereqs
+from . import prereqs_mod, pips
 
 
 console = Console()
@@ -20,7 +20,7 @@ def _cmd_uninstall_prereqs() -> int:
     """
     exe_name = "dkinst"
 
-    targets = [prereqs._detect_shell()]
+    targets = [prereqs_mod._detect_shell()]
     for sh in targets:
         if sh == "unknown":
             if os.name == "nt":
@@ -41,6 +41,11 @@ def _cmd_uninstall_prereqs() -> int:
         else:
             console.print(f"[red]Unsupported shell:[/] {sh}", markup=True)
             return 1
+
+    rc = pips.pip_uninstall(prereqs_mod.PIP_ARGCOMPLETE)
+    if rc != 0:
+        console.print(f"[yellow]Failed to uninstall argcomplete (pip exit {rc}).[/]", markup=True)
+        return rc
 
     console.print("[green]Tab-completion for dkinst has been removed.[/]", markup=True)
     return 0

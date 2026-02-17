@@ -2,14 +2,17 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-import platform
-import sys
 import sysconfig
 
 from rich.console import Console
 
+from . import pips
+
 
 console = Console()
+
+
+PIP_ARGCOMPLETE: str = "argcomplete==3.6.3"
 
 
 def _cmd_prereqs() -> int:
@@ -65,30 +68,19 @@ def _cmd_prereqs() -> int:
 def _ensure_argcomplete() -> str | None:
     """
     Make sure argcomplete is available and return the path to
-    register-python-argcomplete. Uses apt on Debian/Ubuntu if present,
-    otherwise falls back to pip (user install).
+    register-python-argcomplete.
+
+    Uses pip in the current interpreter (venv-aware; falls back between
+    normal and --user installs).
     """
     # already there?
     reg = shutil.which("register-python-argcomplete")
     if reg:
         return reg
 
-    # Prefer apt on Linux if available (covers Debian/Ubuntu and WSL)
-    if platform.system() == "Linux" and shutil.which("apt"):
-        try:
-            subprocess.check_call(["sudo", "apt", "update"])
-            subprocess.check_call(["sudo", "apt", "install", "-y", "python3-argcomplete"])
-            reg = shutil.which("register-python-argcomplete")
-            if reg:
-                return reg
-        except Exception as e:
-            console.print(f"[yellow]apt install failed ({e}); falling back to pip --user[/]", markup=True)
-
-    # Fallback: pip in the current interpreter (no sudo; safe on Windows)
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "argcomplete"])
-    except Exception as e:
-        console.print(f"[red]Could not install argcomplete via pip:[/] {e}", markup=True)
+    rc = pips.pip_install(PIP_ARGCOMPLETE)
+    if rc != 0:
+        console.print(f"[red]Could not install argcomplete via pip (exit {rc}).[/]", markup=True)
         return None
 
     # Try again via PATH, then common script locations even if not on PATH

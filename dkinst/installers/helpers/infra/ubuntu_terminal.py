@@ -3,6 +3,13 @@ import subprocess
 import shutil
 import time
 
+from rich.console import Console
+
+from . import ubuntu_permissions
+
+
+console = Console()
+
 
 def is_executable_exists(package: str) -> bool:
     """
@@ -120,6 +127,87 @@ def add_path_to_bashrc(as_regular_user: bool = False):
             print("Added $HOME/bin to .bashrc")
         else:
             print("$HOME/bin already in .bashrc")
+
+
+def is_service_running(service_name: str, user_mode: bool = False, return_false_on_error: bool = False) -> bool:
+    """
+    Function checks if a service is running.
+    :param service_name: str, the service name.
+    :param user_mode: bool, if True, the service will be checked in user mode.
+    :param return_false_on_error: bool, if True, the function will return False if an error occurs.
+    :return:
+    """
+
+    command: list = ['systemctl']
+
+    if user_mode:
+        command.append('--user')
+
+    command.extend(['is-active', service_name])
+
+    try:
+        # Use subprocess to run 'systemctl is-active' and capture its output
+        status = subprocess.check_output(command, text=True).strip()
+    except subprocess.CalledProcessError as e:
+        if return_false_on_error:
+            # Handle error if systemctl command fails
+            return False
+        else:
+            # Raise the exception if return_false_on_error is False
+            raise e
+
+    if status == "active":
+        return True
+    else:
+        return False
+
+
+def enable_service(service_name: str, sudo: bool = False, user_mode: bool = False):
+    """
+    Function enables a service.
+    :param service_name: str, the service name.
+    :param sudo: bool, if True, the command will be executed with sudo.
+    :param user_mode: bool, if True, the service will be enabled in user mode.
+    :return:
+    """
+
+    command: list = []
+
+    if sudo:
+        command.append('sudo')
+
+    command.append('systemctl')
+
+    if user_mode:
+        command.append('--user')
+
+    command.extend(['enable', service_name])
+
+    subprocess.check_call(command)
+
+
+def start_service(service_name: str, sudo: bool = False, user_mode: bool = False):
+    """
+    Function starts a service.
+    :param service_name: str, the service name.
+    :param sudo: bool, if True, the command will be executed with sudo.
+    :param user_mode: bool, if True, the service will be started in user mode.
+    :return:
+    """
+
+    command: list = []
+
+    if sudo:
+        command.append('sudo')
+
+    command.append('systemctl')
+
+    if user_mode:
+        command.append('--user')
+
+    command.extend(['start', service_name])
+
+    subprocess.check_call(command)
 
 
 def start_enable_service_check_availability(
