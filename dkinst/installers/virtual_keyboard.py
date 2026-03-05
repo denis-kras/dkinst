@@ -1,5 +1,4 @@
 from pathlib import Path
-from types import ModuleType
 from typing import Literal
 import subprocess
 import os
@@ -10,7 +9,7 @@ import shlex
 from atomicshop.wrappers.githubw import GitHubWrapper
 
 from . import _base
-from .helpers.infra import system
+from .helpers.infra import commands
 from .helpers.infra.printing import printc
 
 
@@ -58,7 +57,7 @@ def install_function():
         return 0
     elif is_extension_installed(UUID) and not is_extension_enabled(UUID):
         printc("GJS OSK extension is already installed but not enabled. Enabling now...", color="yellow")
-        system.execute_bash_script_string([
+        commands.execute_bash_script_string([
             f"gnome-extensions enable {UUID} || true"
         ])
         printc("GJS OSK extension has been enabled.", color="green")
@@ -103,7 +102,7 @@ gnome-extensions install --force "{downloaded_release_path}"
 # gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled false || true
 """]
 
-    system.execute_bash_script_string(script_lines)
+    commands.execute_bash_script_string(script_lines)
 
     # Cleanup
     shutil.rmtree(temp_dir)

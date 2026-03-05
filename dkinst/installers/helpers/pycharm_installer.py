@@ -7,9 +7,9 @@ import subprocess
 
 from rich.console import Console
 
-from atomicshop import process, web
+from atomicshop import web
 
-from .infra import system, permissions
+from .infra import system, permissions, commands
 
 
 console = Console()
@@ -92,10 +92,10 @@ def install_ubuntu(enable_sudo_execution: bool = False) -> int:
     Main function to install the latest PyCharm unified Edition.
     """
 
-    process.execute_script('sudo snap install pycharm-professional --classic', shell=True)
+    commands.execute_bash_script_string(['sudo snap install pycharm-professional --classic'])
 
     if enable_sudo_execution:
-        process.execute_script('xhost +SI:localuser:root', shell=True)
+        commands.execute_bash_script_string(['xhost +SI:localuser:root'])
         console.print('Run the following command to start PyCharm as root: [sudo snap run pycharm-professional]', style='blue', markup=False)
     return 0
 # === EOF UBUNTU FUNCTIONS =============================================================================================

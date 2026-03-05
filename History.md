@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.39.0 - 05.03.2026
+  * Reference/import cleaning.
 * 0.38.4 - 17.02.2026
   * Fixed prereqs install/uninstall.
 * 0.38.3 - 16.02.2026

@@ -13,7 +13,7 @@ from rich.console import Console
 from atomicshop import urls, web
 
 if os.name == 'nt':
-    from atomicshop import get_process_list
+    from .infra import processes
 
 from .infra import system, msis, permissions, files, ubuntu_permissions, ubuntu_terminal
 
@@ -129,8 +129,7 @@ def is_service_running() -> bool:
     """
 
     if os.name == 'nt':
-        current_processes: dict = (
-            get_process_list.GetProcessList(get_method='pywin32', connect_on_init=True).get_processes())
+        current_processes: dict = processes.get_process_dict()
 
         for pid, process_info in current_processes.items():
             if MONGODB_EXE_NAME in process_info['name']:

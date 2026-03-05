@@ -4,9 +4,7 @@ import platform
 from rich.console import Console
 
 if platform.system().lower() == 'windows':
-    from . import permissions
-    from atomicshop import get_process_list
-    from atomicshop.wrappers.psutilw import processes
+    from . import permissions, processes
 
 
 console = Console()
@@ -30,8 +28,7 @@ def get_current_msiexec_processes(msi_file_path: str = None) -> dict:
     :return: list of dicts, each key represents a pid and its values are process name and cmdline.
     """
 
-    current_processes: dict = (
-        get_process_list.GetProcessList(get_method='pywin32', connect_on_init=True).get_processes())
+    current_processes: dict = processes.get_process_dict()
 
     current_msiexec_dict: dict = {}
     for pid, process_info in current_processes.items():

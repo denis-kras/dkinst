@@ -3,9 +3,7 @@ import tempfile
 
 from rich.console import Console
 
-from atomicshop import process, virtualization
-
-from .infra import permissions
+from .infra import permissions, powershells, commands, virtualization
 
 
 console = Console()
@@ -23,7 +21,15 @@ def is_wsl_installed():
     command = "Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux"
 
     # Check if WSL is enabled
-    if "Enabled" in process.run_powershell_command(command):
+    rc: int
+    stdout: str
+    stderr: str
+    rc, stdout, stderr = powershells.run_command(command)
+
+    if rc != 0:
+        raise RuntimeError(f"Failed to check WSL installation status. PowerShell command returned non-zero exit code {rc}. Stderr: {stderr}")
+
+    if "Enabled" in stdout:
         return True
     else:
         return False
@@ -38,7 +44,11 @@ def get_installed_distros(
     :param verbose: bool, True to print the command output to the console, False - don't print.
     :return: list, list of installed WSL distros.
     """
-    return process.execute_with_live_output("wsl --list --quiet", verbose=verbose)
+
+    _, output = commands.run_command_stream_and_return_output("wsl --list --quiet", stream=verbose)
+    result_list: list[str] = [line.strip() for line in output.splitlines() if line.strip()]
+
+    return result_list
 
 
 def get_available_distros_to_install() -> list:
@@ -46,7 +56,10 @@ def get_available_distros_to_install() -> list:
     Get a list of available WSL distros to install.
     :return: list, list of available WSL distros to install.
     """
-    return process.execute_with_live_output("wsl --list --online")
+
+    _, output = commands.run_command_stream_and_return_output("wsl --list --online")
+    result_list: list[str] = [line.strip() for line in output.splitlines() if line.strip()]
+    return result_list
 
 
 def is_ubuntu_installed(
@@ -72,7 +85,8 @@ def is_ubuntu_installed(
         command = f"wsl -d Ubuntu lsb_release -a"
 
         # Execute the command
-        result = process.execute_with_live_output(command)
+        _, output = commands.run_command_stream_and_return_output(command)
+        result: list[str] = [line.strip() for line in output.splitlines() if line.strip()]
 
         is_version_installed: bool = False
         # Parse the output for the version number
@@ -94,7 +108,7 @@ def set_wsl_default_version_2() -> int:
     """
 
     print("Setting WSL version 2 as default...")
-    process.run_powershell_command("wsl --set-default-version 2")
+    commands.run_command_stream_and_return_output("wsl --set-default-version 2")
 
     return 0
 
@@ -126,7 +140,7 @@ def install_wsl_as_feature(
     else:
         # Enable WSL
         print("Enabling Windows Subsystem for Linux...")
-        process.run_powershell_command(
+        powershells.run_command(
             "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart")
 
         # # Check if the system needs a reboot
@@ -138,7 +152,7 @@ def install_wsl_as_feature(
     # Enable Virtual Machine Platform is needed for WSL 2.
     if enable_virtual_machine_platform:
         # Check if Hyper-V is enabled
-        if "Enabled" in process.run_powershell_command(
+        if "Enabled" in powershells.run_command(
                 "Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V"):
             print("Hyper-V is enabled")
         else:
@@ -146,7 +160,7 @@ def install_wsl_as_feature(
             command = "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart"
 
             print("Enabling Virtual Machine Platform...")
-            process.run_powershell_command(command)
+            powershells.run_command(command)
 
     if set_default_version_2:
         set_wsl_default_version_2()
@@ -218,7 +232,7 @@ def install_wsl_default_method(
     else:
         command = "wsl --install"
 
-    process.execute_with_live_output(command, verbose=True)
+    commands.run_command_stream_and_return_output(command)
 
     return 0
 

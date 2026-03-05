@@ -1,4 +1,3 @@
-from pathlib import Path
 import shutil
 from typing import Literal
 import os
@@ -7,7 +6,7 @@ import subprocess
 from rich.console import Console
 
 from . import _base
-from .helpers.infra import system
+from .helpers.infra import commands
 
 
 console = Console()
@@ -93,7 +92,7 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew install gcc
 """]
 
-    system.execute_bash_script_string(script_lines)
+    commands.execute_bash_script_string(script_lines)
     import_brew_env()
 
     return 0

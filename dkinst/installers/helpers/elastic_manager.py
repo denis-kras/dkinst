@@ -6,9 +6,7 @@ import time
 
 from rich.console import Console
 
-from atomicshop import process
-
-from .infra import permissions, ubuntu_terminal
+from .infra import permissions, ubuntu_terminal, commands
 
 
 console = Console()
@@ -398,15 +396,16 @@ def main(
     ubuntu_terminal.install_packages(UBUNTU_DEPENDENCY_PACKAGES)
 
     # Install the GPG key and add elastic repository.
-    script = f"""
+    script_lines = ["""
         # Download and install the GPG signing key
         wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor | sudo tee /usr/share/keyrings/elasticsearch-keyring.gpg > /dev/null
 
         # Add the Elastic repository to the system
         echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
         """
+    ]
 
-    process.execute_script(script, shell=True)
+    commands.execute_bash_script_string(script_lines)
 
     # Update system with elastic search packages.
     ubuntu_terminal.update_system_packages()

@@ -9,9 +9,7 @@ import argparse
 
 from rich.console import Console
 
-from atomicshop import process
-
-from .infra import permissions, ubuntu_permissions, ubuntu_terminal
+from .infra import permissions, ubuntu_permissions, ubuntu_terminal, commands
 
 
 console = Console()
@@ -23,6 +21,64 @@ VERSION: str = "1.0.0"
 PREPARATION_OUTPUT_DIR: str = str(Path(__file__).parent / "offline-bundle")
 PREPARATION_OUTPUT_ZIP: str = f"{PREPARATION_OUTPUT_DIR}.zip"
 GET_DOCKER_URL: str = "https://get.docker.com"
+
+
+def _execute_script(
+        script: str,
+        check: bool = True,
+        shell: bool = False,
+        executable: Union[str, None] = '',
+        as_regular_user: bool = False
+):
+    """
+    The function executes a batch script bash on Linux or CMD.exe on Windows.
+    :param script: string, script to execute.
+    :param check: check=True: When this is set, if the command executed with subprocess.run() returns a non-zero
+        exit status (which usually indicates an error), a subprocess.CalledProcessError exception will be raised.
+        This is useful for error handling, as it lets you know if something went wrong with the command's execution.
+        Without check=True, subprocess.run() will not raise an exception for non-zero exit codes, and you would have
+        to check the return code manually if you want to handle errors.
+    :param shell: shell=True: This parameter allows you to pass a string command
+        (just as you would type it in the shell) directly to subprocess.run().
+        When shell=True, the specified command will be executed through the shell, giving you access to shell features
+        like shell pipes, filename wildcards, environment variable expansion, and expansion of ~ to a user's
+        home directory. However, using shell=True can be a security hazard, especially when combining it with
+        untrusted input, as it makes the code susceptible to shell injection attacks.
+        It's generally safer to use shell=False (the default) and pass your arguments as a list of strings.
+        shell=True allows you to execute complex shell commands, including those with multiple statements,
+        directly in Python, just as you would in a bash script.
+        'cd' is shell-specific functionality.
+        Without shell=True, the Python subprocess module would not understand the command "cd <directory>" as it's
+        not an executable but a shell built-in command.
+    :param executable: string, the executable that will be used to run the script.
+        If not provided, the default shell will be used.
+    :param as_regular_user: boolean, if True, the script will be executed as a regular user with:
+        'sudo -u <username> <script>'
+        but in this context as:
+        'sudo -u {os.getlogin()} <script>'
+        This is useful when you want to execute a script as a regular user, but you are running the script with sudo.
+        Sometimes even if you try to use os.setuid() to change the user, it will not work, since the script is executed
+        with sudo.
+    :return: None if execution was successful, subprocess.CalledProcessError string if not.
+    """
+
+    if executable == '':
+        if os.name == 'nt':
+            executable = 'cmd.exe'
+        elif os.name == 'posix':
+            executable = '/bin/bash'
+        else:
+            raise OSError(f'OS not supported: {os.name}')
+
+    if as_regular_user:
+        script = ubuntu_terminal.get_command_execution_as_sudo_executer(script)
+        # script = f'sudo -u {os.getlogin()} {script}'
+
+    try:
+        subprocess.run(script, check=check, shell=shell, executable=executable)
+        return None
+    except subprocess.CalledProcessError as e:
+        return e
 
 
 def is_docker_installed():
@@ -107,11 +163,11 @@ def install_docker_ubuntu(
         # Use the docker installer script.
         # The script will install docker and add the current user to the docker group.
         # The script will also install docker-compose and docker-buildx.
-        # process.execute_script('curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh', shell=True)
-        process.execute_script('curl -fsSL https://get.docker.com | sh', shell=True)
+        # _execute_script('curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh', shell=True)
+        _execute_script('curl -fsSL https://get.docker.com | sh', shell=True)
         # subprocess.run("curl -fsSL https://get.docker.com | sh", shell=True, check=True)
-        # process.execute_script('curl -fsSL https://get.docker.com -o get-docker.sh', shell=True)
-        # process.execute_script('sh get-docker.sh', shell=True)
+        # _execute_script('curl -fsSL https://get.docker.com -o get-docker.sh', shell=True)
+        # _execute_script('sh get-docker.sh', shell=True)
         # os.remove('get-docker.sh')
     else:
         # Remove the existing keyrings, so we will not be asked to overwrite it if it exists.
@@ -141,7 +197,7 @@ def install_docker_ubuntu(
         # sudo usermod -aG docker $USER
         """
 
-        process.execute_script(script, shell=True)
+        _execute_script(script, shell=True)
 
     if rootless:
         # Install uidmap package.
@@ -152,8 +208,8 @@ def install_docker_ubuntu(
 
         with ubuntu_permissions.temporary_regular_permissions():
             # After 'get-docker.sh' execution, we will install docker in rootless mode.
-            # process.execute_script('dockerd-rootless-setuptool.sh install', shell=True, as_regular_user=True)
-            process.execute_script(
+            # _execute_script('dockerd-rootless-setuptool.sh install', shell=True, as_regular_user=True)
+            _execute_script(
                 '/usr/bin/dockerd-rootless-setuptool.sh install',
                 as_regular_user=True,
                 shell=True,
@@ -165,13 +221,13 @@ def install_docker_ubuntu(
         docker_enable_command = ubuntu_terminal.get_command_execution_as_sudo_executer(
             'systemctl --user enable docker.service')
         print('Starting and enabling the docker service in user mode...')
-        process.execute_script(docker_start_command, shell=True, executable=None)
-        process.execute_script(docker_enable_command, shell=True, executable=None)
+        _execute_script(docker_start_command, shell=True, executable=None)
+        _execute_script(docker_enable_command, shell=True, executable=None)
 
         print('Executing "loginctl enable-linger" to enable Docker to run when the user is not logged in...')
         non_sudo_executer = ubuntu_permissions.get_sudo_executer_username()
         # Enable lingering so Docker runs when the user is not logged in
-        process.execute_script(f'sudo loginctl enable-linger {non_sudo_executer}', shell=True)
+        _execute_script(f'sudo loginctl enable-linger {non_sudo_executer}', shell=True)
 
         print('Adding $HOME/bin to your PATH...')
         # Add $HOME/bin to your PATH if it's not already there.
@@ -189,23 +245,25 @@ def install_docker_ubuntu(
 
         # ubuntu_terminal.add_line_to_bashrc(
         #     'export DOCKER_HOST=unix:///run/user/1000/docker.sock', as_regular_user=True)
-        # process.execute_script('export DOCKER_HOST=unix:///run/user/1000/docker.sock', shell=True)
+        # _execute_script('export DOCKER_HOST=unix:///run/user/1000/docker.sock', shell=True)
         # Restart shell.
-        # process.execute_script('source ~/.bashrc', shell=True)
+        # _execute_script('source ~/.bashrc', shell=True)
 
+    rc: int
+    output: str
     if add_current_user_to_docker_group_bool:
         # Check if current user that executed the script is a sudo user. If not, use the current user.
         # Add the current user to the docker group.
         add_current_user_to_docker_group()
 
         # Verify the installation.
-        result: list = process.execute_with_live_output('sudo docker run hello-world')
+        rc, outut = commands.run_command_stream_and_return_output('sudo docker run hello-world')
     else:
-        result: list = process.execute_with_live_output('docker run hello-world')
+        rc, output = commands.run_command_stream_and_return_output('docker run hello-world')
 
-    print('\n'.join(result))
+    print(output)
 
-    if 'Hello from Docker!' in '\n'.join(result):
+    if 'Hello from Docker!' in output:
         console.print('Docker installed successfully.', style='green')
         return 0
     else:

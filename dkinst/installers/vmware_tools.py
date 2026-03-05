@@ -1,11 +1,9 @@
-from pathlib import Path
-from types import ModuleType
 from typing import Literal
 
 from rich.console import Console
 
 from . import _base
-from .helpers.infra import system, ubuntu_terminal
+from .helpers.infra import commands, ubuntu_terminal
 
 
 console = Console()
@@ -44,7 +42,7 @@ sudo apt update
 sudo apt install -y open-vm-tools open-vm-tools-desktop
 """]
 
-    system.execute_bash_script_string(script_lines)
+    commands.execute_bash_script_string(script_lines)
 
     result_code: int = ubuntu_terminal.start_enable_service_check_availability(
         "open-vm-tools",

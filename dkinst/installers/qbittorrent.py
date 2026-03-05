@@ -3,7 +3,7 @@ from typing import Literal
 from rich.console import Console
 
 from . import _base
-from .helpers.infra import system, chocos
+from .helpers.infra import system, chocos, commands
 
 
 console = Console()
@@ -76,7 +76,7 @@ class QBitTorrent(_base.BaseInstaller):
 def install_function() -> int:
     current_platform: str = system.get_platform()
     if current_platform == "debian":
-        system.execute_bash_script_string(DEBIAN_INSTALL_UPGRADE_SCRIPT)
+        commands.execute_bash_script_string(DEBIAN_INSTALL_UPGRADE_SCRIPT)
     elif current_platform == "windows":
         chocos.install_package(CHOCO_PACKAGE_NAME)
     else:
@@ -89,7 +89,7 @@ def install_function() -> int:
 def upgrade_function() -> int:
     current_platform: str = system.get_platform()
     if current_platform == "debian":
-        system.execute_bash_script_string(DEBIAN_INSTALL_UPGRADE_SCRIPT)
+        commands.execute_bash_script_string(DEBIAN_INSTALL_UPGRADE_SCRIPT)
     elif current_platform == "windows":
         chocos.upgrade_package(CHOCO_PACKAGE_NAME)
     else:
@@ -102,7 +102,7 @@ def upgrade_function() -> int:
 def uninstall_function() -> int:
     current_platform: str = system.get_platform()
     if current_platform == "debian":
-        system.execute_bash_script_string([
+        commands.execute_bash_script_string([
             """
 sudo apt remove -y qbittorrent
 sudo apt purge qbittorrent

@@ -1,11 +1,9 @@
-from pathlib import Path
-from types import ModuleType
 from typing import Literal
 
 from rich.console import Console
 
 from . import _base
-from .helpers.infra import system
+from .helpers.infra import commands
 
 
 console = Console()
@@ -92,6 +90,6 @@ echo
 echo "You will need to log out of your current session and use a desktop environment compatible with xrdp."
 """]
 
-    system.execute_bash_script_string(script_lines)
+    commands.execute_bash_script_string(script_lines)
 
     return 0

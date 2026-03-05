@@ -3,7 +3,7 @@ from typing import Literal
 from rich.console import Console
 
 from . import _base
-from .helpers.infra import system
+from .helpers.infra import commands
 
 
 console = Console()
@@ -42,6 +42,6 @@ def install_function():
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y ./google-chrome-stable_current_amd64.deb
 """]
 
-    system.execute_bash_script_string(script_lines)
+    commands.execute_bash_script_string(script_lines)
 
     return 0
