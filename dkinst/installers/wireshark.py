@@ -1,0 +1,95 @@
+from typing import Literal
+
+from rich.console import Console
+
+from . import _base
+from .helpers.infra import system, chocos
+
+
+console = Console()
+
+
+CHOCO_PACKAGE_NAME: str = "wireshark"
+
+
+class Wireshark(_base.BaseInstaller):
+    def __init__(self):
+        super().__init__(__file__)
+        self.description: str = "Wireshark Installer"
+        self.version: str = "1.0.0"
+        self.platforms: list = ["windows"]
+        self.dependencies: list = ["chocolatey"]
+
+        self.admins: dict = {
+            "windows": ["install", "upgrade", "uninstall"]
+        }
+
+    def install(
+            self,
+    ) -> int:
+        return install_function()
+
+    def upgrade(
+            self,
+    ) -> int:
+        return upgrade_function()
+
+    def uninstall(
+            self
+    ) -> int:
+        return uninstall_function()
+
+    def _show_help(
+            self,
+            method: Literal["install", "uninstall", "upgrade"]
+    ) -> None:
+        if method == "install":
+            method_help: str = (
+                f"Windows: This method installs {self.name} from Chocolatey repo.\n"
+            )
+            print(method_help)
+        elif method == "upgrade":
+            method_help: str = (
+                f"Windows: This method upgrades {self.name} from Chocolatey repo.\n"
+            )
+            print(method_help)
+        elif method == "uninstall":
+            method_help: str = (
+                f"Windows: This method uninstalls {self.name} using Chocolatey.\n"
+            )
+            print(method_help)
+        else:
+            raise ValueError(f"Unknown method '{method}'.")
+
+
+def install_function() -> int:
+    current_platform: str = system.get_platform()
+    if current_platform == "windows":
+        chocos.install_package(CHOCO_PACKAGE_NAME)
+    else:
+        console.print(f"Platform '{current_platform}' is not supported by this installer.", style="red")
+        return 1
+
+    return 0
+
+
+def upgrade_function() -> int:
+    current_platform: str = system.get_platform()
+    if current_platform == "windows":
+        chocos.upgrade_package(CHOCO_PACKAGE_NAME)
+    else:
+        console.print(f"Platform '{current_platform}' is not supported by this installer.", style="red")
+        return 1
+
+    return 0
+
+
+def uninstall_function() -> int:
+    current_platform: str = system.get_platform()
+    if current_platform == "windows":
+        chocos.uninstall_package(CHOCO_PACKAGE_NAME)
+    else:
+        console.print(f"Platform '{current_platform}' is not supported by this installer.", style="red")
+        return 1
+
+    return 0
