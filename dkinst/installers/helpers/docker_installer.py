@@ -27,7 +27,7 @@ def _execute_script(
         script: str,
         check: bool = True,
         shell: bool = False,
-        executable: Union[str, None] = '',
+        executable: str | None = '',
         as_regular_user: bool = False
 ):
     """
@@ -257,7 +257,7 @@ def install_docker_ubuntu(
         add_current_user_to_docker_group()
 
         # Verify the installation.
-        rc, outut = commands.run_command_stream_and_return_output('sudo docker run hello-world')
+        rc, output = commands.run_command_stream_and_return_output('sudo docker run hello-world')
     else:
         rc, output = commands.run_command_stream_and_return_output('docker run hello-world')
 
