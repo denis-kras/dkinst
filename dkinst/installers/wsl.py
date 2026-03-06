@@ -12,6 +12,7 @@ class WSL(_base.BaseInstaller):
         self.description: str = "Windows Subsystem for Linux (WSL) manager."
         self.version: str = wsl_manager.VERSION
         self.platforms: list = ["windows"]
+        self.admins: dict = {"windows": ["install"]}
         self.helper: ModuleType = wsl_manager
 
     def install(

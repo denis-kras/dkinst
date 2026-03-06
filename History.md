@@ -1,6 +1,9 @@
 <!-- HISTORY -->
 ## History
 
+* 0.39.3 - 05.03.2026
+  * WSL installer fix.
+  * Release executables.
 * 0.39.2 - 05.03.2026
   * Added WireShark installer (Windows).
 * 0.39.1 - 05.03.2026
