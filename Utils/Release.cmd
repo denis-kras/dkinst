@@ -13,14 +13,17 @@ REM ============================================================
 echo ============================================================
 echo Checking for WSL
 echo ============================================================
-REM Use 'wsl echo ok' as the real test - fails if component or distro is missing
-wsl echo ok >nul 2>&1
-if not errorlevel 1 goto :wsl_ready
+REM Check if WSL actually works by verifying the output of 'wsl echo ok'
+REM (exit code is unreliable - returns 0 even without a distro)
+set "WSL_OK="
+for /f "usebackq delims=" %%O in (`wsl echo ok 2^>nul`) do set "WSL_OK=%%O"
+if "!WSL_OK!"=="ok" goto :wsl_ready
 
 echo WSL not ready. Trying to update...
 wsl --update >nul 2>&1
-wsl echo ok >nul 2>&1
-if not errorlevel 1 goto :wsl_ready
+set "WSL_OK="
+for /f "usebackq delims=" %%O in (`wsl echo ok 2^>nul`) do set "WSL_OK=%%O"
+if "!WSL_OK!"=="ok" goto :wsl_ready
 
 echo Installing WSL with Ubuntu...
 wsl --install -d Ubuntu --no-launch
@@ -35,8 +38,9 @@ if errorlevel 1 (
     exit /b 1
 )
 ubuntu config --default-user ubuntu
-wsl echo ok >nul 2>&1
-if errorlevel 1 (
+set "WSL_OK="
+for /f "usebackq delims=" %%O in (`wsl echo ok 2^>nul`) do set "WSL_OK=%%O"
+if not "!WSL_OK!"=="ok" (
     echo WSL installed. Please restart your computer and re-run this script.
     exit /b 0
 )
