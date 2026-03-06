@@ -235,7 +235,9 @@ echo.
 echo ============================================================
 echo Creating GitHub release
 echo ============================================================
-gh release create %VERSION% "%WIN_ZIP%" "%UBU_ZIP%" -R "%ROOT%" --title "dkinst %VERSION%" --generate-notes
+pushd "%ROOT%"
+gh release create %VERSION% "%WIN_ZIP%" "%UBU_ZIP%" --title "dkinst %VERSION%" --generate-notes
+popd
 if errorlevel 1 (
     echo ERROR: Failed to create GitHub release.
     del /f "%WIN_ZIP%" >nul 2>&1
