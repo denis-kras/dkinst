@@ -178,8 +178,19 @@ echo Checking gh CLI
 echo ============================================================
 where gh >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: gh CLI not found. Install it from https://cli.github.com/
-    exit /b 1
+    echo gh CLI not found. Installing...
+    winget install -e --id GitHub.cli --accept-package-agreements --accept-source-agreements
+    if errorlevel 1 (
+        echo ERROR: Failed to install gh CLI.
+        exit /b 1
+    )
+    REM Refresh PATH so gh is available in this session
+    for /f "usebackq delims=" %%P in (`where /r "%ProgramFiles%\GitHub CLI" gh.exe 2^>nul`) do set "PATH=%%~dpP;!PATH!"
+    where gh >nul 2>&1
+    if errorlevel 1 (
+        echo gh CLI installed but not found in PATH. Please restart your terminal and re-run.
+        exit /b 1
+    )
 )
 echo gh CLI found.
 
