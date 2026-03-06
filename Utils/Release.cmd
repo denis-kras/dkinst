@@ -13,47 +13,36 @@ REM ============================================================
 echo ============================================================
 echo Checking for WSL
 echo ============================================================
-wsl --status >nul 2>&1
-if errorlevel 1 (
-    echo WSL not found. Trying to update...
-    wsl --update
-    wsl --status >nul 2>&1
-    if errorlevel 1 (
-        echo WSL still not available. Installing...
-        wsl --install --no-distribution
-        if errorlevel 1 (
-            echo ERROR: Failed to install WSL.
-            exit /b 1
-        )
-        echo WSL installed. Please restart your computer and re-run this script.
-        exit /b 0
-    )
-)
-echo WSL is available.
+REM Use 'wsl echo ok' as the real test - fails if component or distro is missing
+wsl echo ok >nul 2>&1
+if not errorlevel 1 goto :wsl_ready
 
-echo.
-echo ============================================================
-echo Checking for WSL distribution
-echo ============================================================
-set "HAS_DISTRO=0"
-for /f "usebackq delims=" %%L in (`wsl --list --quiet 2^>nul`) do set "HAS_DISTRO=1"
-if "!HAS_DISTRO!"=="0" (
-    echo No WSL distribution found. Installing Ubuntu...
-    wsl --install -d Ubuntu --no-launch
-    if errorlevel 1 (
-        echo ERROR: Failed to install Ubuntu distribution.
-        exit /b 1
-    )
-    echo Creating default user 'ubuntu'...
-    wsl -d Ubuntu bash -c "useradd -m -s /bin/bash -G sudo ubuntu && echo 'ubuntu:ubuntu' | chpasswd && echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu"
-    if errorlevel 1 (
-        echo ERROR: Failed to create default user.
-        exit /b 1
-    )
-    ubuntu config --default-user ubuntu
-    echo Ubuntu distribution installed with default user 'ubuntu'.
+echo WSL not ready. Trying to update...
+wsl --update >nul 2>&1
+wsl echo ok >nul 2>&1
+if not errorlevel 1 goto :wsl_ready
+
+echo Installing WSL with Ubuntu...
+wsl --install -d Ubuntu --no-launch
+if errorlevel 1 (
+    echo ERROR: Failed to install WSL / Ubuntu.
+    exit /b 1
 )
-echo WSL distribution is available.
+echo Creating default user 'ubuntu'...
+wsl -d Ubuntu bash -c "useradd -m -s /bin/bash -G sudo ubuntu && echo 'ubuntu:ubuntu' | chpasswd && echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu"
+if errorlevel 1 (
+    echo ERROR: Failed to create default user.
+    exit /b 1
+)
+ubuntu config --default-user ubuntu
+wsl echo ok >nul 2>&1
+if errorlevel 1 (
+    echo WSL installed. Please restart your computer and re-run this script.
+    exit /b 0
+)
+
+:wsl_ready
+echo WSL is ready.
 
 echo.
 echo ============================================================
