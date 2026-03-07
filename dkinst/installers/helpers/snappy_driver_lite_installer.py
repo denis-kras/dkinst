@@ -84,7 +84,8 @@ def install(dir_path: str) -> int:
 
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)
-        shutil.move(extracted_inner, dir_path)
+        os.makedirs(os.path.dirname(dir_path), exist_ok=True)
+        shutil.copytree(extracted_inner, dir_path)
 
         _write_version_file(dir_path, version)
     finally:
