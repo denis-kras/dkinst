@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.40.1 - 07.03.2026
+  * Dependencies fix.
 * 0.40.0 - 07.03.2026
   * Changed python installer.
   * Moved prereqs.
