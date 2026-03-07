@@ -55,7 +55,7 @@ requires-python = ">=3.12"
 dependencies = [
     "wheel",
     "atomicshop",
-    "dkarchiver==1.0.3",
+    "dkarchiver==1.0.5",
     "langcodes==3.5.1",
     "language-data==1.4.0",
     "prompt_toolkit==3.0.52",

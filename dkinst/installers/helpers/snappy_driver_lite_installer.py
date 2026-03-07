@@ -9,7 +9,7 @@ import requests
 from rich.console import Console
 
 from atomicshop import web
-from dkarchiver.arch_wrappers import sevenz_app_w
+from dkarchiver.arch_wrappers import sevenzs
 
 
 console = Console()
@@ -73,7 +73,7 @@ def install(dir_path: str) -> int:
 
         # Extract archive to a temp extraction dir.
         temp_extract_dir: str = os.path.join(temp_dir, "extracted")
-        sevenz_app_w.extract_file(archive_path, temp_extract_dir, force_overwrite=True)
+        sevenzs.extract_file(archive_path, temp_extract_dir)
 
         # The archive contains a top-level SDI_{version}/ folder.
         # Move its contents into dir_path.
