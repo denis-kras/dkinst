@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 include = ["dkinst*"]
 
 [tool.setuptools.package-data]
-dkinst = ["config.toml"]
+dkinst = ["config.toml", "prereqs/*"]
 
 # Getting verision from '__init__.py' of the 'dkinst' package.
 [tool.setuptools.dynamic]

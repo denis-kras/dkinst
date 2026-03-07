@@ -1,6 +1,11 @@
 <!-- HISTORY -->
 ## History
 
+* 0.40.0 - 07.03.2026
+  * Changed python installer.
+  * Moved prereqs.
+  * Fixed Eset Internet Security installer.
+  * Added Scappy Driver installers.
 * 0.39.3 - 05.03.2026
   * WSL installer fix.
   * Release executables.

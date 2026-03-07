@@ -29,7 +29,7 @@ To get a local copy up and running follow these simple steps.
 ### Installation Windows
 
 1. Install Python 3.13 or use the silent installer that will download and install it for you.<br>
-    1.1. Download the file: /prereqs/install_python_as_admin_win.cmd<br>
+    1.1. Download the file: /dkinst/prereqs/install_python_as_admin_win.cmd<br>
     1.2. Run CMD as admin.<br>
     1.3. In CMD run the script with '3.13' argument (it will install the latest micro version of 3.13):
     ```cmd
@@ -58,7 +58,7 @@ To get a local copy up and running follow these simple steps.
 ### Installation Linux
    
 Ubuntu 24 already comes with python 3.12. This file will install dkinst globally using pipx.<br>
-1. Download the file: /prereqs/install_dkinst_pipx_debian.sh<br>
+1. Download the file: /dkinst/prereqs/install_dkinst_pipx_debian.sh<br>
 2. Make the file executable:<br>
     ```sh
     chmod +x install_dkinst_pipx_debian.sh

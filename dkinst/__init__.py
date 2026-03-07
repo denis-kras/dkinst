@@ -1,4 +1,4 @@
 """Den K Simple Installer"""
 
 __author__ = "Den Kras"
-__version__ = '0.39.3'
+__version__ = '0.40.0'

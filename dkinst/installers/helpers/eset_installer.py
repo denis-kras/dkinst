@@ -18,9 +18,6 @@ import shutil
 from .infra import registrys, msis, win_open_windows, languages
 from .infra.printing import printc
 
-from atomicshop import web
-
-
 VERSION: str = "1.0.1"
 RELEASE_COMMENT: str = "Language selection and uninstall improvements."
 
@@ -59,6 +56,7 @@ def install_eset_internet_security(
     if installer_dir:
         os.makedirs(installer_dir, exist_ok=True)
 
+    from atomicshop import web
     installer_path = web.download(download_url, target_directory=installer_dir, overwrite=force_download)
 
     language_lcid: str = str(languages.convert_string_to_lcid(language))
