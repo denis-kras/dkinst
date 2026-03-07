@@ -74,6 +74,12 @@ To uninstall the auto-completion from Linux terminals or Windows PowerShell shel
     dkinst prereqs-uninstall
    ```
 
+### Update
+To check for a new dkinst version and update if available run:
+   ```cmd
+    dkinst update_versions
+   ```
+
 <!-- USAGE EXAMPLES -->
 ## Usage
 

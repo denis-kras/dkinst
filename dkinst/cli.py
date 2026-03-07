@@ -47,6 +47,7 @@ COMMAND_ALIASES: dict[str, str] = {
     "m": "manual",
     "a": "available",
     "h": "help",
+    "update_version": "update_versions",
 }
 
 
@@ -717,6 +718,10 @@ def _dispatch(
         subprocess.run(["notepad", config_path])
         return 0
 
+    if namespace.sub == "update_versions":
+        from . import updater
+        return updater.cmd_update_versions()
+
     if namespace.sub == "prereqs":
         from .installers.helpers.infra import prereqs_mod
         return prereqs_mod._cmd_prereqs()
@@ -874,6 +879,8 @@ def _make_parser() -> argparse.ArgumentParser:
         "                               While typing `dkinst in<Tab>` it will auto-complete to `install`.\n"
         "                               Currently uses argcomplete's global activation method: register-python-argcomplete\n"
         "  prereqs-uninstall            Uninstall prerequisites for dkinst, removing tab-completion support.\n"
+        "  update_versions              Check for a new dkinst version and update if available.\n"
+        "       update_version          (alias for update_versions)\n"
         "  help                         Show this help message.\n"
         "       h                       (alias for help)\n"
         "\n"
@@ -933,6 +940,7 @@ def _make_parser() -> argparse.ArgumentParser:
     sub.add_parser("edit-config")
     sub.add_parser("prereqs")
     sub.add_parser("prereqs-uninstall")
+    sub.add_parser("update_versions")
     sub.add_parser("help")
 
     if argcomplete is not None:

@@ -101,7 +101,6 @@ echo ============================================================
 echo Cleanup (Windows build)
 echo ============================================================
 del /f "%ENTRY%" >nul 2>&1
-if exist "%ROOT%\dkinst.egg-info" rmdir /s /q "%ROOT%\dkinst.egg-info"
 
 echo.
 echo Done. Windows executable is at: "%SCRIPT_DIR%dkinst.exe"
@@ -257,6 +256,7 @@ del /f "%WIN_ZIP%" >nul 2>&1
 del /f "%UBU_ZIP%" >nul 2>&1
 del /f "%SCRIPT_DIR%dkinst.exe" >nul 2>&1
 del /f "%SCRIPT_DIR%dkinst" >nul 2>&1
+if exist "%ROOT%\dkinst.egg-info" rmdir /s /q "%ROOT%\dkinst.egg-info"
 echo Zip files and executables removed.
 
 echo.
