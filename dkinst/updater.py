@@ -93,19 +93,38 @@ def _update_pip_package() -> int:
     return pips.pip_install("dkinst")
 
 
-def cmd_update_versions() -> int:
-    from atomicshop.wrappers.githubw import GitHubWrapper
+def _get_latest_pypi_version() -> str | None:
+    import json
+    import urllib.request
+    import urllib.error
 
-    gw = GitHubWrapper(user_name="denis-kras", repo_name="dkinst")
-
+    url = "https://pypi.org/pypi/dkinst/json"
     try:
-        latest_version_str = gw.get_latest_release_version()
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            data = json.loads(resp.read().decode())
+        return data["info"]["version"]
     except Exception as exc:
-        console.print(
-            f"Failed to check for updates: {exc}",
-            style="red", markup=False,
-        )
-        return 1
+        console.print(f"Failed to check PyPI for updates: {exc}", style="red", markup=False)
+        return None
+
+
+def cmd_update_version(force: bool = False) -> int:
+    if _is_frozen():
+        from atomicshop.wrappers.githubw import GitHubWrapper
+
+        gw = GitHubWrapper(user_name="denis-kras", repo_name="dkinst")
+        try:
+            latest_version_str = gw.get_latest_release_version()
+        except Exception as exc:
+            console.print(
+                f"Failed to check for updates: {exc}",
+                style="red", markup=False,
+            )
+            return 1
+    else:
+        latest_version_str = _get_latest_pypi_version()
+        if latest_version_str is None:
+            return 1
 
     current = _parse_version(__version__)
     latest = _parse_version(latest_version_str)
@@ -118,9 +137,15 @@ def cmd_update_versions() -> int:
         return 0
 
     console.print(
-        f"New version available: {latest_version_str}. Updating...",
+        f"New version available: {latest_version_str}",
         style="yellow", markup=False,
     )
+
+    if not force:
+        answer = console.input("Do you want to update? [y/N]: ").strip().lower()
+        if answer not in ("y", "yes"):
+            console.print("Update cancelled.")
+            return 0
 
     if _is_frozen():
         return _update_frozen_executable(gw)

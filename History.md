@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.41.1 - 07.03.2026
+  * Updated the self update method.
 * 0.41.0 - 07.03.2026
   * Added self update method.
 * 0.40.2 - 07.03.2026
