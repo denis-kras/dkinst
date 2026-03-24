@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.41.4 - 24.03.2026
+  * Dependencies update.
 * 0.41.3 - 07.03.2026
   * Snappy Driver Origin fix.
 * 0.41.2 - 07.03.2026
