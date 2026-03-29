@@ -29,6 +29,8 @@ class GoogleChrome(_base.BaseInstaller):
         if method == "install":
             method_help: str = (
                 "This method installs Google Chrome deb file from its official URL.\n"
+                "After installation, patches the .desktop file to use --password-store=basic,\n"
+                "which prevents the 'Unlock Login Keyring' dialog on systems without auto-unlock.\n"
             )
             print(method_help)
         else:
@@ -38,8 +40,23 @@ class GoogleChrome(_base.BaseInstaller):
 def install_function():
     script_lines = [
         """
+DEB_PATH="/tmp/google-chrome-stable_current_amd64.deb"
+wget -O "$DEB_PATH" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y "$DEB_PATH"
+rm -f "$DEB_PATH"
 
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y ./google-chrome-stable_current_amd64.deb
+# Prevent "Unlock Login Keyring" dialog on systems where the GNOME keyring
+# is not auto-unlocked (e.g., auto-login or lightweight display managers).
+DESKTOP_FILE="/usr/share/applications/google-chrome-stable.desktop"
+if [ -f "$DESKTOP_FILE" ]; then
+    if ! grep -q '\-\-password-store=basic' "$DESKTOP_FILE"; then
+        sudo sed -i 's|^Exec=\(.*\)|Exec=\1 --password-store=basic|' "$DESKTOP_FILE"
+        echo "[*] Patched $DESKTOP_FILE to use --password-store=basic."
+    else
+        echo "[*] $DESKTOP_FILE already contains --password-store=basic, skipping patch."
+    fi
+else
+    echo "[!] Warning: $DESKTOP_FILE not found. Keyring patch not applied."
+fi
 """]
 
     commands.execute_bash_script_string(script_lines)

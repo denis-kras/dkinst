@@ -512,6 +512,15 @@ def _require_admin_if_needed(
     console.print('This action requires administrator privileges. Upgrading...', style='yellow')
 
     if current_platform == 'debian':
+        # Save bootstrap argv so the elevated process knows what to run.
+        # sudo -E preserves env vars, so the elevated dkinst will read this
+        # via _pop_elevate_bootstrap() before entering interactive mode.
+        if reexec_argv and (len(sys.argv) <= 1) and _ELEVATE_BOOTSTRAP_ENV not in os.environ:
+            try:
+                os.environ[_ELEVATE_BOOTSTRAP_ENV] = json.dumps(reexec_argv)
+            except Exception:
+                pass
+
         # Auto-elevate; this never returns on success
         permissions.ensure_root_or_reexec_debian()
 
