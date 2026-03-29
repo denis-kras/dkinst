@@ -46,8 +46,19 @@ rm -f "$DEB_PATH"
 
 # Prevent "Unlock Login Keyring" dialog on systems where the GNOME keyring
 # is not auto-unlocked (e.g., auto-login or lightweight display managers).
-DESKTOP_FILE="/usr/share/applications/google-chrome-stable.desktop"
-if [ -f "$DESKTOP_FILE" ]; then
+DESKTOP_FILE=""
+for candidate in \
+    /usr/share/applications/google-chrome-stable.desktop \
+    /usr/share/applications/google-chrome.desktop \
+    "$HOME/.local/share/applications/google-chrome-stable.desktop" \
+    "$HOME/.local/share/applications/google-chrome.desktop"; do
+    if [ -f "$candidate" ]; then
+        DESKTOP_FILE="$candidate"
+        break
+    fi
+done
+
+if [ -n "$DESKTOP_FILE" ]; then
     if ! grep -q '\-\-password-store=basic' "$DESKTOP_FILE"; then
         sudo sed -i 's|^Exec=\(.*\)|Exec=\1 --password-store=basic|' "$DESKTOP_FILE"
         echo "[*] Patched $DESKTOP_FILE to use --password-store=basic."
@@ -55,7 +66,7 @@ if [ -f "$DESKTOP_FILE" ]; then
         echo "[*] $DESKTOP_FILE already contains --password-store=basic, skipping patch."
     fi
 else
-    echo "[!] Warning: $DESKTOP_FILE not found. Keyring patch not applied."
+    echo "[!] Warning: No Chrome .desktop file found. Keyring patch not applied."
 fi
 """]
 
