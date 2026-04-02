@@ -54,14 +54,16 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "wheel",
+    "beautifulsoup4==4.14.3",
     "dkarchiver==1.0.6",
     "dkwebmod==1.0.2",
     "langcodes==3.5.1",
     "language-data==1.4.0",
     "prompt_toolkit==3.0.52",
     "psutil==7.1.3",
+    "pywin32==311; platform_system == 'Windows'",
+    "requests==2.33.1",
     "rich==14.2.0",
-#    "pywin32; platform_system == 'Windows'",
 ]
 
 classifiers = [
