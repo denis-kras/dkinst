@@ -8,7 +8,7 @@ import sys
 
 from rich.console import Console
 
-from atomicshop.wrappers import githubw
+from dkwebmod import githubw
 
 from .infra import registrys
 

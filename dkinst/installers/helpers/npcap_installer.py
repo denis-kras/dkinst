@@ -11,7 +11,8 @@ import sys
 
 from rich.console import Console
 
-from atomicshop import web
+from dkwebmod import web
+from dkwebmod.user_agents import USER_AGENTS
 
 from .infra import permissions
 
@@ -23,7 +24,7 @@ VERSION: str = "1.0.0"
 # Initial version
 
 DIST_URL = "https://npcap.com/dist/"
-USER_AGENT = web.USER_AGENTS['Chrome 142.0.0 Windows 10/11 x64']
+USER_AGENT = USER_AGENTS['Chrome 142.0.0 Windows 10/11 x64']
 
 WINDOW_TITLE: str = "Npcap"
 

@@ -7,7 +7,7 @@ import subprocess
 
 from rich.console import Console
 
-from atomicshop import web
+from dkwebmod import web
 
 from .infra import system, permissions, commands
 

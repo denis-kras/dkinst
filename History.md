@@ -1,6 +1,8 @@
 <!-- HISTORY -->
 ## History
 
+* 0.41.8 - 02.04.2026
+  * Dependencies fix.
 * 0.41.5-0.41.7 - 29.03.2026
   * Google Chrome Ubuntu fix.
   * Sudo delegation fix on Ubuntu.

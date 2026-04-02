@@ -56,7 +56,7 @@ def install_eset_internet_security(
     if installer_dir:
         os.makedirs(installer_dir, exist_ok=True)
 
-    from atomicshop import web
+    from dkwebmod import web
     installer_path = web.download(download_url, target_directory=installer_dir, overwrite=force_download)
 
     language_lcid: str = str(languages.convert_string_to_lcid(language))

@@ -5,7 +5,7 @@ import argparse
 
 from rich.console import Console
 
-from atomicshop.wrappers import githubw
+from dkwebmod import githubw
 
 from .infra import permissions, msis, system
 
@@ -22,7 +22,7 @@ import os
 import time
 import tempfile
 
-from atomicshop import web
+from dkwebmod import web
 
 
 WINDOWS_X64_SUFFIX: str = "x64.msi"

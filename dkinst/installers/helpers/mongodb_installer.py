@@ -10,7 +10,8 @@ from typing import Literal
 
 from rich.console import Console
 
-from atomicshop import urls, web
+from dkwebmod import urls
+from dkwebmod import web
 
 if os.name == 'nt':
     from .infra import processes

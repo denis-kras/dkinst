@@ -110,7 +110,7 @@ def _get_latest_pypi_version() -> str | None:
 
 def cmd_update_version(force: bool = False) -> int:
     if _is_frozen():
-        from atomicshop.wrappers.githubw import GitHubWrapper
+        from dkwebmod.githubw import GitHubWrapper
 
         gw = GitHubWrapper(user_name="denis-kras", repo_name="dkinst")
         try:

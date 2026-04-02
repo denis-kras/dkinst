@@ -7,7 +7,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from atomicshop.wrappers import githubw
+from dkwebmod import githubw
 
 from .infra import system, appxs, powershells, permissions
 from .infra.printing import printc

@@ -56,6 +56,7 @@ dependencies = [
     "wheel",
     "atomicshop",
     "dkarchiver==1.0.6",
+    "dkwebmod==1.0.1",
     "langcodes==3.5.1",
     "language-data==1.4.0",
     "prompt_toolkit==3.0.52",

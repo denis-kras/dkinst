@@ -5,7 +5,7 @@ import subprocess
 import time
 from typing import Literal
 
-from atomicshop.wrappers import githubw
+from dkwebmod import githubw
 
 from . import _base
 from .helpers.infra import msis

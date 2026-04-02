@@ -3,7 +3,7 @@ from types import ModuleType
 from typing import Literal
 import os
 
-from atomicshop.wrappers import githubw
+from dkwebmod import githubw
 
 from . import _base
 from .helpers.infra.printing import printc

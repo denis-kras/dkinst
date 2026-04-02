@@ -8,7 +8,7 @@ from pathlib import Path
 import requests
 from rich.console import Console
 
-from atomicshop import web
+from dkwebmod import web
 from dkarchiver.arch_wrappers import sevenzs
 
 

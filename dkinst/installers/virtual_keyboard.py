@@ -6,7 +6,7 @@ import tempfile
 import shutil
 import shlex
 
-from atomicshop.wrappers.githubw import GitHubWrapper
+from dkwebmod.githubw import GitHubWrapper
 
 from . import _base
 from .helpers.infra import commands

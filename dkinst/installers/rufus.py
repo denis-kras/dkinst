@@ -3,7 +3,7 @@ from typing import Literal
 
 from rich.console import Console
 
-from atomicshop.wrappers import githubw
+from dkwebmod import githubw
 
 from . import _base
 
