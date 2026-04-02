@@ -54,7 +54,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "wheel",
-    "atomicshop",
     "dkarchiver==1.0.6",
     "dkwebmod==1.0.1",
     "langcodes==3.5.1",
